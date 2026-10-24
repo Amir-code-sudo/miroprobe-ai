@@ -39,6 +39,15 @@ export default defineConfig({
     ignoreHTTPSErrors: true,
     trace: 'off',
     proxy: activeProxy,
+    launchOptions: {
+      args: [
+        '--disable-blink-features=AutomationControlled',
+        '--disable-popup-blocking',
+        '--disable-web-security',
+        '--no-sandbox',
+        '--disable-setuid-sandbox'
+      ]
+    }
   },
   projects: [
     {
