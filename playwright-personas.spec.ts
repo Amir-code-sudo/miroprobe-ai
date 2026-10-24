@@ -6,6 +6,7 @@
 import { test, expect } from '@playwright/test';
 import { applyMiroProbeStealth, handleConsentAndOverlays, engageWithMediaPlayback } from './stealth-engine';
 import { humanClick, humanType, humanScroll, rageClick } from './human-biometrics';
+const { sendTelemetry } = require('./telemetry-client');
 
 const rawTarget = (process.env.TARGET_URL || 'https://cinewave-hub.pages.dev').trim();
 const BASE_URL = rawTarget.replace(/\/$/, '');
@@ -13,6 +14,8 @@ const BASE_URL = rawTarget.replace(/\/$/, '');
 test.describe('MiroProbe AI Autonomous Personas — سينما ويف | CineWave - مشاهدة وتحميل أحدث الأفلام والمسلسلات والأنمي بجودة 4K', () => {
 
   test('Persona 1: 🇪🇬 [EG] [GOOGLE] The Trending & Anime Explorer - مستكشف الأعمال الأكثر رواجاً وقسم الأنمي', async ({ page }) => {
+    sendTelemetry({ type: 'start', visitorIndex: 1, geo: 'Cairo', flag: '🇪🇬', os: 'Windows', source: 'Google CPC' });
+    const startTime = Date.now();
     // Hardware: desktop_nvidia | Geo: EG (🇪🇬) | Campaign Source: GOOGLE | Network: Fiber / High-Speed
     await applyMiroProbeStealth(page, 'desktop_nvidia', 'EG', 'GOOGLE');
 
@@ -62,10 +65,15 @@ test.describe('MiroProbe AI Autonomous Personas — سينما ويف | CineWave
     await humanScroll(page, 550, { increments: 6 });
     await page.waitForTimeout(3000);
 
+    const dwell = ((Date.now() - startTime) / 1000).toFixed(1);
+    sendTelemetry({ type: 'finish', visitorIndex: 1, geo: 'Cairo', flag: '🇪🇬', os: 'Windows', source: 'Google CPC', dwell, success: true });
+
     await expect(page).toHaveTitle(/.*/);
   });
 
   test('Persona 2: 🇸🇦 [SA] [TIKTOK] The Cinema Streamer & Server Switcher - مشاهد الأفلام ومشغل سيرفرات البث', async ({ page }) => {
+    sendTelemetry({ type: 'start', visitorIndex: 2, geo: 'Riyadh', flag: '🇸🇦', os: 'Windows', source: 'TikTok Ads' });
+    const startTime = Date.now();
     // Hardware: desktop_intel | Geo: SA (🇸🇦) | Campaign Source: TIKTOK | Network: 5G High-Bandwidth
     await applyMiroProbeStealth(page, 'desktop_intel', 'SA', 'TIKTOK');
 
@@ -118,10 +126,15 @@ test.describe('MiroProbe AI Autonomous Personas — سينما ويف | CineWave
     }
     await page.waitForTimeout(1600);
 
+    const dwell = ((Date.now() - startTime) / 1000).toFixed(1);
+    sendTelemetry({ type: 'finish', visitorIndex: 2, geo: 'Riyadh', flag: '🇸🇦', os: 'Windows', source: 'TikTok Ads', dwell, success: true });
+
     await expect(page).toHaveTitle(/.*/);
   });
 
   test('Persona 3: 🇺🇸 [US] [FACEBOOK] The Search & Quality Filterer - الباحث المباشر ومفرز الجودة العالمية', async ({ page }) => {
+    sendTelemetry({ type: 'start', visitorIndex: 3, geo: 'New York', flag: '🇺🇸', os: 'macOS', source: 'Facebook Ads' });
+    const startTime = Date.now();
     // Hardware: desktop_nvidia | Geo: US (🇺🇸) | Campaign Source: FACEBOOK | Network: WiFi
     await applyMiroProbeStealth(page, 'desktop_nvidia', 'US', 'FACEBOOK');
 
@@ -167,10 +180,15 @@ test.describe('MiroProbe AI Autonomous Personas — سينما ويف | CineWave
     await humanScroll(page, 550, { increments: 6 });
     await page.waitForTimeout(2500);
 
+    const dwell = ((Date.now() - startTime) / 1000).toFixed(1);
+    sendTelemetry({ type: 'finish', visitorIndex: 3, geo: 'New York', flag: '🇺🇸', os: 'macOS', source: 'Facebook Ads', dwell, success: true });
+
     await expect(page).toHaveTitle(/.*/);
   });
 
   test('Persona 4: 🇬🇧 [GB] [INSTAGRAM] The Mobile Binge Streamer - متصفح الهاتف وعاشق مسلسلات الأنمي', async ({ page }) => {
+    sendTelemetry({ type: 'start', visitorIndex: 4, geo: 'London', flag: '🇬🇧', os: 'Android', source: 'Instagram' });
+    const startTime = Date.now();
     // Hardware: mobile_android | Geo: GB (🇬🇧) | Campaign Source: INSTAGRAM | Network: 4G LTE Mobile
     await applyMiroProbeStealth(page, 'mobile_android', 'GB', 'INSTAGRAM');
 
@@ -215,6 +233,9 @@ test.describe('MiroProbe AI Autonomous Personas — سينما ويف | CineWave
       await humanClick(page, clickLoc_3_4);
     }
     await page.waitForTimeout(1500);
+
+    const dwell = ((Date.now() - startTime) / 1000).toFixed(1);
+    sendTelemetry({ type: 'finish', visitorIndex: 4, geo: 'London', flag: '🇬🇧', os: 'Android', source: 'Instagram', dwell, success: true });
 
     await expect(page).toHaveTitle(/.*/);
   });
