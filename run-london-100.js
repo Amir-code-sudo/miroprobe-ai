@@ -13,18 +13,23 @@ const { getProxyForWorker } = require('./proxy-pool');
 const { getSessionPath } = require('./session-manager');
 
 // Configuration
-const TARGET_URL = (process.argv[2] || process.env.TARGET_URL || 'https://meyar-gold-egypt.pages.dev').trim().replace(/\/$/, '');
+const TARGET_URL = (process.argv[2] || process.env.TARGET_URL || 'https://cinewave-hub.pages.dev').trim().replace(/\/$/, '');
 const TOTAL_VISITS = parseInt(process.argv[3] || '100', 10);
 const CONCURRENCY = parseInt(process.argv[4] || '3', 10);
 const IS_HEADED = process.argv.includes('--headed') || process.env.HEADED === 'true';
 
-// Internal sub-pages to simulate natural visitor browsing
-const SUB_PAGES = [
-  '',
-  '/gold-price-egypt',
-  '/gold-calculator',
-  '/gold-history'
-];
+// Dynamically determine sub-pages based on the target website
+function getSubPagesForTarget(url) {
+  if (url.includes('meyar') || url.includes('gold')) {
+    return ['', '/gold-price-egypt', '/gold-calculator', '/gold-history'];
+  }
+  if (url.includes('cinewave')) {
+    return ['', '#anime', '#movies', '#trending'];
+  }
+  return ['', ''];
+}
+
+const SUB_PAGES = getSubPagesForTarget(TARGET_URL);
 
 async function checkEgressIp() {
   return new Promise((resolve) => {
@@ -78,13 +83,40 @@ async function runSingleVisitor(browser, visitorIndex, activeGeo, stats) {
     }
   });
 
-  // Inject advanced stealth script
+  // Track any popunder / ad windows opened by Adsterra
+  let popupPage = null;
+  context.on('page', (p) => {
+    popupPage = p;
+  });
+
+  // Inject advanced stealth script (Hardware, WebGL & Bot Defense bypass)
   await context.addInitScript((opts) => {
     Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
-    window.chrome = { runtime: {} };
+    window.chrome = { runtime: {}, loadTimes: () => {}, csi: () => {}, app: {} };
     if (opts.referrer) {
       Object.defineProperty(document, 'referrer', { get: () => opts.referrer });
     }
+
+    // WebGL Vendor & Renderer Spoofing to defeat Bot Fraud Filters
+    try {
+      const getParameter = WebGLRenderingContext.prototype.getParameter;
+      WebGLRenderingContext.prototype.getParameter = function(parameter) {
+        if (parameter === 37445) return 'Google Inc. (NVIDIA)';
+        if (parameter === 37446) return 'ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 Direct3D11 vs_5_0 ps_5_0, D3D11)';
+        return getParameter.apply(this, [parameter]);
+      };
+      if (window.WebGL2RenderingContext) {
+        const getParameter2 = WebGL2RenderingContext.prototype.getParameter;
+        WebGL2RenderingContext.prototype.getParameter = function(parameter) {
+          if (parameter === 37445) return 'Google Inc. (NVIDIA)';
+          if (parameter === 37446) return 'ANGLE (NVIDIA, NVIDIA GeForce RTX 3070 Direct3D11 vs_5_0 ps_5_0, D3D11)';
+          return getParameter2.apply(this, [parameter]);
+        };
+      }
+      Object.defineProperty(navigator, 'plugins', {
+        get: () => [1, 2, 3, 4, 5]
+      });
+    } catch (e) {}
   }, { referrer: source.referrer });
 
   const page = await context.newPage();
@@ -107,6 +139,13 @@ async function runSingleVisitor(browser, visitorIndex, activeGeo, stats) {
 
     // 3. User activation click (Triggers Adsterra Popunder / Social Bar impressions)
     await page.mouse.click(250 + Math.random() * 200, 250 + Math.random() * 150).catch(() => {});
+
+    // Allow popunder ad window to load and fire impression beacon
+    if (popupPage) {
+      await popupPage.waitForLoadState('domcontentloaded', { timeout: 6000 }).catch(() => {});
+      await popupPage.waitForTimeout(2000);
+      await popupPage.close().catch(() => {});
+    }
 
     // 4. Human dwell time
     const dwellSeconds = Math.floor(Math.random() * 3) + 3; // 3 to 5 seconds
@@ -175,6 +214,9 @@ async function main() {
     headless: !IS_HEADED,
     args: [
       '--disable-blink-features=AutomationControlled',
+      '--disable-popup-blocking',
+      '--disable-web-security',
+      '--disable-features=IsolateOrigins,site-per-process',
       '--no-sandbox',
       '--disable-setuid-sandbox'
     ]

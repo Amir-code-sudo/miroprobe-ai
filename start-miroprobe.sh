@@ -1,7 +1,7 @@
 #!/bin/bash
 # MiroProbe AI — Cloud Linux Interactive Control Console (Codespaces / Ubuntu)
 
-TARGET_URL="http://localhost:3000"
+TARGET_URL="https://cinewave-hub.pages.dev"
 TOTAL_VISITS="20"
 WORKERS_COUNT="3"
 SELECTED_WORKER="0"
@@ -86,19 +86,19 @@ while true; do
     2)
       echo ""
       echo "Running Single Visitor Persona ($WORKER_NAME) in Cloud Headless mode..."
-      HEADLESS=true npx playwright test playwright-personas.spec.ts --workers=1 -g "$PW_FILTER"
+      TARGET_URL="$TARGET_URL" HEADLESS=true npx playwright test playwright-personas.spec.ts --workers=1 -g "$PW_FILTER"
       read -p "Press Enter to continue..."
       ;;
     3)
       echo ""
       echo "Launching $WORKERS_COUNT Parallel Cloud Browsers over $CALC_WAVES Waves..."
       echo "Total Visits to execute: $TOTAL_VISITS for $WORKER_NAME"
-      HEADLESS=true npx playwright test playwright-personas.spec.ts --workers="$WORKERS_COUNT" --repeat-each="$REPEAT_WAVES" -g "$PW_FILTER"
+      TARGET_URL="$TARGET_URL" HEADLESS=true npx playwright test playwright-personas.spec.ts --workers="$WORKERS_COUNT" --repeat-each="$REPEAT_WAVES" -g "$PW_FILTER"
       read -p "Press Enter to continue..."
       ;;
     4)
       echo ""
-      read -p "Enter Target Website URL: " new_target
+      read -p "Enter Target Website URL (e.g. https://cinewave-hub.pages.dev): " new_target
       if [ -n "$new_target" ]; then
         TARGET_URL="$new_target"
         echo "Running Autonomous AI Crawler against: $TARGET_URL ..."
@@ -111,6 +111,11 @@ while true; do
       echo "============================================================================"
       echo "  Configure Volume, Worker Type & Traffic Settings"
       echo "============================================================================"
+      read -p "  Enter Target Website URL (Current: $TARGET_URL): " in_url
+      if [ -n "$in_url" ]; then
+        TARGET_URL="$in_url"
+      fi
+
       read -p "  Enter Total Desired Visits (Current: $TOTAL_VISITS): " in_total
       if [ -n "$in_total" ]; then
         TOTAL_VISITS="$in_total"
@@ -132,7 +137,7 @@ while true; do
 
       update_config_vars
       echo ""
-      echo "  [OK] Updated Configuration: $TOTAL_VISITS visits divided into $CALC_WAVES safe waves for $WORKER_NAME"
+      echo "  [OK] Target: $TARGET_URL | Visits: $TOTAL_VISITS | Workers: $WORKERS_COUNT"
       read -p "Press Enter to return..."
       ;;
     6)
@@ -145,6 +150,7 @@ while true; do
     7)
       echo ""
       echo "Running Real International Visitors Swarm..."
+      echo "Target: $TARGET_URL | Visits: $TOTAL_VISITS | Concurrency: $WORKERS_COUNT"
       node run-london-100.js "$TARGET_URL" "$TOTAL_VISITS" "$WORKERS_COUNT"
       read -p "Press Enter to continue..."
       ;;
