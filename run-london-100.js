@@ -54,10 +54,19 @@ async function runSingleVisitor(browser, visitorIndex, activeGeo, stats) {
   const device = getRandomDeviceProfile();
   const source = getRandomTrafficSource('ALL_SOCIAL');
   
-  // Select random subpage for ~35% of visitors to create multi-page engaged sessions
+  // Select random subpage for ~35% of visitors to create natural sessions
   const subPage = Math.random() < 0.35 ? SUB_PAGES[Math.floor(Math.random() * SUB_PAGES.length)] : '';
-  const utmParam = source.utm ? (source.utm.includes('?') ? source.utm : `?${source.utm}`) : '';
-  const fullUrl = `${TARGET_URL}${subPage}${utmParam}`;
+  let fullUrl = TARGET_URL;
+  if (subPage.startsWith('/')) {
+    fullUrl += subPage;
+  }
+  if (source.utm) {
+    const sep = fullUrl.includes('?') ? '&' : '?';
+    fullUrl += `${sep}${source.utm}`;
+  }
+  if (subPage.startsWith('#')) {
+    fullUrl += subPage;
+  }
 
   const sessionFile = getSessionPath();
   const workerProxy = getProxyForWorker(visitorIndex);
@@ -81,12 +90,6 @@ async function runSingleVisitor(browser, visitorIndex, activeGeo, stats) {
       'Accept-Language': `${activeGeo.locale},en;q=0.9,ar;q=0.8`,
       ...(source.referrer ? { 'Referer': source.referrer } : {})
     }
-  });
-
-  // Track any popunder / ad windows opened by Adsterra
-  let popupPage = null;
-  context.on('page', (p) => {
-    popupPage = p;
   });
 
   // Inject advanced stealth script (Hardware, WebGL & Bot Defense bypass)
@@ -121,6 +124,17 @@ async function runSingleVisitor(browser, visitorIndex, activeGeo, stats) {
 
   const page = await context.newPage();
   const startTime = Date.now();
+
+  // Auto-dismiss native streaming/download dialogs & alerts
+  page.on('dialog', async (d) => {
+    await d.dismiss().catch(() => {});
+  });
+
+  // Track any popunder / ad windows opened exclusively by this page
+  let popupPage = null;
+  page.on('popup', (p) => {
+    popupPage = p;
+  });
 
   try {
     // 1. Navigate to target URL and wait for full load
