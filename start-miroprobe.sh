@@ -48,6 +48,21 @@ update_config_vars() {
   fi
 }
 
+setup_residential_gateway() {
+  if ! command -v tor &> /dev/null; then
+    echo "[*] Initializing Residential Consumer Gateway to bypass Datacenter filters..."
+    apt-get update -qq >/dev/null 2>&1 && apt-get install -y -qq tor >/dev/null 2>&1
+  fi
+  service tor status >/dev/null 2>&1 || service tor start >/dev/null 2>&1
+  if ss -tuln 2>/dev/null | grep -q ":9050"; then
+    export PROXY_SERVER="socks5://127.0.0.1:9050"
+    GATEWAY_STATUS="✅ نشط (Residential Socks5: 127.0.0.1:9050)"
+  else
+    GATEWAY_STATUS="⚡ مباشر (Direct Azure Cloud IP)"
+  fi
+}
+
+setup_residential_gateway
 update_config_vars
 
 while true; do
@@ -62,12 +77,13 @@ while true; do
   echo "  Safe Concurrency  : $WORKERS_COUNT Parallel Workers | Batch Waves: $CALC_WAVES"
   echo "  Target Country    : $TARGET_GEO | Source: $TRAFFIC_SOURCE"
   echo "  Device Profiles   : $DEVICE_MIX"
+  echo "  Egress Gateway    : $GATEWAY_STATUS"
   echo "----------------------------------------------------------------------------"
   echo "Select Operation Mode:"
   echo "  [1] Show Cloud Dashboard URL"
   echo "  [2] Run Single Headless Visitor ($WORKER_NAME)"
   echo "  [3] Run Multi-Visitor Concurrent Wave ($TOTAL_VISITS Visits / $WORKERS_COUNT Parallel)"
-  echo "  [4] Enter New Target URL & Run AI Autonomous Discovery"
+  echo "  [4] Change Target Website (CineWave / Meyar Gold / Custom)"
   echo "  [5] Configure Volume, Worker Type, Geo Country & Traffic Sources"
   echo "  [6] Run High-Scale Behavioral Load Simulation ($TARGET_VPM Visitors/Min)"
   echo "  [7] Run Real Visitors Swarm ($TOTAL_VISITS Visits / $WORKERS_COUNT Parallel)"
@@ -86,24 +102,32 @@ while true; do
     2)
       echo ""
       echo "Running Single Visitor Persona ($WORKER_NAME) in Cloud Headless mode..."
-      TARGET_URL="$TARGET_URL" HEADLESS=true npx playwright test playwright-personas.spec.ts --workers=1 -g "$PW_FILTER"
+      TARGET_URL="$TARGET_URL" PROXY_SERVER="$PROXY_SERVER" HEADLESS=true npx playwright test playwright-personas.spec.ts --workers=1 -g "$PW_FILTER"
       read -p "Press Enter to continue..."
       ;;
     3)
       echo ""
       echo "Launching $WORKERS_COUNT Parallel Cloud Browsers over $CALC_WAVES Waves..."
-      echo "Total Visits to execute: $TOTAL_VISITS for $WORKER_NAME"
-      TARGET_URL="$TARGET_URL" HEADLESS=true npx playwright test playwright-personas.spec.ts --workers="$WORKERS_COUNT" --repeat-each="$REPEAT_WAVES" -g "$PW_FILTER"
+      echo "Target: $TARGET_URL | Visits: $TOTAL_VISITS | Gateway: $GATEWAY_STATUS"
+      TARGET_URL="$TARGET_URL" PROXY_SERVER="$PROXY_SERVER" HEADLESS=true npx playwright test playwright-personas.spec.ts --workers="$WORKERS_COUNT" --repeat-each="$REPEAT_WAVES" -g "$PW_FILTER"
       read -p "Press Enter to continue..."
       ;;
     4)
       echo ""
-      read -p "Enter Target Website URL (e.g. https://cinewave-hub.pages.dev): " new_target
-      if [ -n "$new_target" ]; then
-        TARGET_URL="$new_target"
-        echo "Running Autonomous AI Crawler against: $TARGET_URL ..."
-        HEADLESS=true node ai-crawler.js "$TARGET_URL"
+      echo "Select Target Website to test:"
+      echo "  [1] 🎬 سينما ويف (https://cinewave-hub.pages.dev)"
+      echo "  [2] 💰 معيار الذهب في مصر (https://meyar-gold-egypt.pages.dev)"
+      echo "  [3] كتابة رابط مخصص آخر"
+      read -p "Enter choice (1-3, default 1): " site_choice
+      if [ "$site_choice" = "2" ]; then
+        TARGET_URL="https://meyar-gold-egypt.pages.dev"
+      elif [ "$site_choice" = "3" ]; then
+        read -p "Enter custom URL: " custom_target
+        if [ -n "$custom_target" ]; then TARGET_URL="$custom_target"; fi
+      else
+        TARGET_URL="https://cinewave-hub.pages.dev"
       fi
+      echo "✅ Active Target URL set to: $TARGET_URL"
       read -p "Press Enter to continue..."
       ;;
     5)
@@ -150,8 +174,8 @@ while true; do
     7)
       echo ""
       echo "Running Real International Visitors Swarm..."
-      echo "Target: $TARGET_URL | Visits: $TOTAL_VISITS | Concurrency: $WORKERS_COUNT"
-      node run-london-100.js "$TARGET_URL" "$TOTAL_VISITS" "$WORKERS_COUNT"
+      echo "Target: $TARGET_URL | Visits: $TOTAL_VISITS | Concurrency: $WORKERS_COUNT | Gateway: $GATEWAY_STATUS"
+      PROXY_SERVER="$PROXY_SERVER" node run-london-100.js "$TARGET_URL" "$TOTAL_VISITS" "$WORKERS_COUNT"
       read -p "Press Enter to continue..."
       ;;
     8)

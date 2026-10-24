@@ -91,7 +91,7 @@ async function runSingleVisitor(browser, visitorIndex, activeGeo, stats) {
   }
 
   const sessionFile = getSessionPath();
-  const workerProxy = getProxyForWorker(visitorIndex);
+  const workerProxy = getProxyForWorker(visitorIndex) || (process.env.PROXY_SERVER ? { server: process.env.PROXY_SERVER } : undefined);
 
   const context = await browser.newContext({
     ...(sessionFile ? { storageState: sessionFile } : {}),
