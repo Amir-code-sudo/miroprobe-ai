@@ -1,0 +1,14 @@
+{
+  "name": "MiroProbe AI Cloud Studio",
+  "image": "mcr.microsoft.com/playwright:v1.50.0-noble",
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": {
+      "label": "MiroProbe AI Dashboard & Simulator",
+      "onAutoForward": "openBrowser",
+      "visibility": "public"
+    }
+  },
+  "postCreateCommand": "npm install && npx playwright install chromium",
+  "postStartCommand": "node server.js"
+}
