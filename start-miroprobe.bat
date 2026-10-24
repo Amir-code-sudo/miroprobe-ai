@@ -6,7 +6,7 @@ color 0B
 :: Auto-unblock files from Internet (Mark-of-the-Web) to suppress Windows Security Warning
 powershell -NoProfile -Command "Get-ChildItem -Path '%~dp0' -Recurse | Unblock-File" >nul 2>nul
 
-set "TARGET_URL=http://localhost:8080"
+set "TARGET_URL=https://cinewave-hub.pages.dev"
 set "TOTAL_VISITS=20"
 set "WORKERS_COUNT=5"
 set "SELECTED_WORKER=0"
@@ -289,6 +289,7 @@ if "%single_choice%"=="2" (
 )
 echo.
 echo Launching 1 Visible Chromium Window for: %WORKER_NAME% ...
+set "TARGET_URL=%TARGET_URL%"
 set "TARGET_GEO=%TARGET_GEO%"
 set "TRAFFIC_SOURCE=%TRAFFIC_SOURCE%"
 set "DEVICE_MIX=%DEVICE_MIX%"
