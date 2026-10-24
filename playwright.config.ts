@@ -44,6 +44,8 @@ export default defineConfig({
         '--disable-blink-features=AutomationControlled',
         '--disable-popup-blocking',
         '--disable-web-security',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
         '--no-sandbox',
         '--disable-setuid-sandbox'
       ]

@@ -49,14 +49,8 @@ update_config_vars() {
 }
 
 setup_residential_gateway() {
-  if ! command -v tor &> /dev/null; then
-    echo "[*] Initializing Residential Consumer Gateway to bypass Datacenter filters..."
-    apt-get update -qq >/dev/null 2>&1 && apt-get install -y -qq tor >/dev/null 2>&1
-  fi
-  service tor status >/dev/null 2>&1 || service tor start >/dev/null 2>&1
-  if ss -tuln 2>/dev/null | grep -q ":9050"; then
-    export PROXY_SERVER="socks5://127.0.0.1:9050"
-    GATEWAY_STATUS="✅ نشط (Residential Socks5: 127.0.0.1:9050)"
+  if [ -n "$PROXY_SERVER" ]; then
+    GATEWAY_STATUS="🌐 نشط ($PROXY_SERVER)"
   else
     GATEWAY_STATUS="⚡ مباشر (Direct Azure Cloud IP)"
   fi
@@ -158,6 +152,32 @@ while true; do
       echo ""
       read -p "  Enter Safe Concurrency / Parallel Workers (1-8, Current: $WORKERS_COUNT): " in_c
       if [ -n "$in_c" ]; then WORKERS_COUNT="$in_c"; fi
+
+      echo ""
+      echo "  Select Traffic Egress Gateway (بوابة خروج الترافيك):"
+      echo "    [1] ⚡ مباشر (Direct Azure Cloud IP - Fastest & Recommended)"
+      echo "    [2] 🧅 Tor Consumer Network (socks5://127.0.0.1:9050)"
+      echo "    [3] 💻 البروكسي المنزلي للابتوب (Laptop Residential Edge Proxy)"
+      echo "    [4] تعطيل البروكسي والعودة للمباشر"
+      read -p "  Enter gateway choice (1-4, leave blank to keep current): " in_gw
+      if [ "$in_gw" = "2" ]; then
+        if ! command -v tor &> /dev/null; then
+          echo "[*] Installing Tor Gateway..."
+          apt-get update -qq >/dev/null 2>&1 && apt-get install -y -qq tor >/dev/null 2>&1
+        fi
+        service tor start >/dev/null 2>&1
+        export PROXY_SERVER="socks5://127.0.0.1:9050"
+        GATEWAY_STATUS="🧅 نشط (Tor Socks5: 127.0.0.1:9050)"
+      elif [ "$in_gw" = "3" ]; then
+        read -p "  Enter your Laptop Proxy URL (e.g. http://xyz.loca.lt or http://ip:8888): " in_px
+        if [ -n "$in_px" ]; then
+          export PROXY_SERVER="$in_px"
+          GATEWAY_STATUS="💻 بروكسي اللابتوب المنزلي ($PROXY_SERVER)"
+        fi
+      elif [ "$in_gw" = "4" ] || [ "$in_gw" = "1" ]; then
+        unset PROXY_SERVER
+        GATEWAY_STATUS="⚡ مباشر (Direct Azure Cloud IP)"
+      fi
 
       update_config_vars
       echo ""

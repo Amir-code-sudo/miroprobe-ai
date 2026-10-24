@@ -181,7 +181,7 @@ async function runSingleVisitor(browser, visitorIndex, activeGeo, stats) {
       window.scrollBy({ top: 350 + Math.random() * 250, behavior: 'smooth' });
     }).catch(() => {});
 
-    await page.waitForTimeout(1500);
+    await page.waitForTimeout(1500).catch(() => {});
 
     // 3. User activation click (Triggers Adsterra Popunder / Social Bar impressions)
     await page.mouse.click(250 + Math.random() * 200, 250 + Math.random() * 150).catch(() => {});
@@ -189,13 +189,13 @@ async function runSingleVisitor(browser, visitorIndex, activeGeo, stats) {
     // Allow popunder ad window to load and fire impression beacon
     if (popupPage) {
       await popupPage.waitForLoadState('domcontentloaded', { timeout: 6000 }).catch(() => {});
-      await popupPage.waitForTimeout(2000);
+      await popupPage.waitForTimeout(2000).catch(() => {});
       await popupPage.close().catch(() => {});
     }
 
     // 4. Human dwell time
     const dwellSeconds = Math.floor(Math.random() * 3) + 3; // 3 to 5 seconds
-    await page.waitForTimeout(dwellSeconds * 1000);
+    await page.waitForTimeout(dwellSeconds * 1000).catch(() => {});
 
     // Track stats
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
@@ -287,6 +287,8 @@ async function main() {
       '--disable-popup-blocking',
       '--disable-web-security',
       '--disable-features=IsolateOrigins,site-per-process',
+      '--disable-dev-shm-usage',
+      '--disable-gpu',
       '--no-sandbox',
       '--disable-setuid-sandbox'
     ]
