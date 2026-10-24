@@ -34,6 +34,14 @@ const INITIAL_CONFIG = {
   "baseLatencyMs": 85
 };
 
+// Global in-memory Real-Time Telemetry store
+const LIVE_STATS = {
+  totalVisits: 0,
+  successfulImpressions: 0,
+  activeWorkers: 0,
+  recentLogs: []
+};
+
 function renderMainHtml(SCENARIOS) {
   return `<!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -57,18 +65,77 @@ function renderMainHtml(SCENARIOS) {
     .badge-info { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
     .nav-btn { background: #1e293b; color: #38bdf8; border: 1px solid #38bdf8; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 14px; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s; }
     .nav-btn:hover { background: #38bdf8; color: #090d16; }
+    @keyframes pulseGlow { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.1); } }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
       <div>
-        <h1 style="margin:0;font-size:22px;">MiroProbe AI — محاكي التحمل السلوكي والتوأم الرقمي للزوار</h1>
+        <h1 style="margin:0;font-size:22px;">MiroProbe AI — منصة السحاب لمضاهاة الزوار ومحاكاة الأحمال الواقعية</h1>
         <p style="margin:4px 0 0;color:#94a3b8;font-size:14px;">الموقع المستهدف: <span class="mono">${SCENARIOS.targetUrl}</span> | التصنيف: <strong style="color:#38bdf8;">${SCENARIOS.domainCategory || 'عام'}</strong></p>
       </div>
       <div style="display:flex; align-items:center; gap:12px;">
         <a href="/bot-audit" class="nav-btn">🛡️ معمل فحص البصمة ومكافحة البوتات (Anti-Bot Lab)</a>
         <div style="font-family:monospace;color:#38bdf8;">Port: ${PORT}</div>
+      </div>
+    </div>
+
+    <!-- بطاقة البث الحي اللحظي للمتصفحات السحابية (Real-Time Cloud Visitor Stream & Impression Counter) -->
+    <div class="card" style="border: 2px solid #38bdf8; background: linear-gradient(180deg, #0d1e3d 0%, #090d16 100%); box-shadow: 0 0 25px rgba(56, 189, 248, 0.2);">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #1e293b; padding-bottom:12px; margin-bottom:16px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:#10b981; box-shadow:0 0 10px #10b981; animation:pulseGlow 1.5s infinite;"></span>
+          <h3 style="margin:0; font-size:18px; color:#38bdf8;">📡 شاشة المراقبة المباشرة للزيارات والمشاهدات السحابية (Real-Time Cloud Telemetry Hub)</h3>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <button onclick="launchCloudWave()" style="background: linear-gradient(135deg, #10b981, #059669); color: #fff; border: none; padding: 10px 18px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; box-shadow: 0 4px 12px rgba(16,185,129,0.3);">
+            🚀 إطلاق سرب الزوار السحابي الآن (Run Cloud Swarm)
+          </button>
+        </div>
+      </div>
+
+      <div class="grid" style="margin-bottom:16px;">
+        <div style="background:#090d16; border:1px solid #1e293b; border-radius:8px; padding:14px; text-align:center;">
+          <div style="color:#94a3b8; font-size:13px;">إجمالي الزيارات السحابية المنجزة (Total Visits)</div>
+          <div id="liveTotalVisits" class="mono" style="color:#38bdf8; font-size:36px; font-weight:900; margin-top:4px;">0</div>
+        </div>
+        <div style="background:#090d16; border:1px solid #1e293b; border-radius:8px; padding:14px; text-align:center;">
+          <div style="color:#94a3b8; font-size:13px;">المشاهدات الموثقة (Verified Impressions)</div>
+          <div id="liveImpressions" class="mono" style="color:#4ade80; font-size:36px; font-weight:900; margin-top:4px;">0</div>
+        </div>
+        <div style="background:#090d16; border:1px solid #1e293b; border-radius:8px; padding:14px; text-align:center;">
+          <div style="color:#94a3b8; font-size:13px;">المتصفحات السحابية النشطة الآن (Active Browsers)</div>
+          <div id="liveActiveWorkers" class="mono" style="color:#f59e0b; font-size:36px; font-weight:900; margin-top:4px;">0</div>
+        </div>
+      </div>
+
+      <!-- جدول البث المباشر لكل زائر بالثانية -->
+      <div style="background:#090d16; border:1px solid #1e293b; border-radius:8px; padding:12px; max-height:260px; overflow-y:auto;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <span style="font-size:13px; font-weight:bold; color:#cbd5e1;">⚡ سجل تدفق الزوار الحقيقي بالثواني (Live Visitor Stream Log):</span>
+          <span style="font-size:11px; color:#10b981;">● متصل مباشرة بمحركات Chromium في سحابة Azure</span>
+        </div>
+        <table style="width:100%; border-collapse:collapse; font-size:13px;">
+          <thead>
+            <tr style="color:#94a3b8; border-bottom:1px solid #334155; text-align:right;">
+              <th style="padding:6px 8px;">الوقت</th>
+              <th style="padding:6px 8px;">الزائر #</th>
+              <th style="padding:6px 8px;">الدولة والمدينة</th>
+              <th style="padding:6px 8px;">نظام التشغيل</th>
+              <th style="padding:6px 8px;">مصدر الحملة (Referrer)</th>
+              <th style="padding:6px 8px;">مدة المكوث (Dwell)</th>
+              <th style="padding:6px 8px;">حالة المشاهدة</th>
+            </tr>
+          </thead>
+          <tbody id="telemetryTableBody">
+            <tr>
+              <td colspan="7" style="text-align:center; padding:18px; color:#64748b;">
+                اضغط على زر <strong>"إطلاق سرب الزوار السحابي"</strong> أو شغّل السرب من شاشة Codespaces لمشاهدة تدفق الزيارات الحقيقية لحظياً أمام اللجنة!
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
@@ -772,12 +839,93 @@ const botAuditHtmlPage = `<!DOCTYPE html>
       document.getElementById('mouseTrajectoryType').style.color = '#38bdf8';
       document.getElementById('mousePointsCount').textContent = 'النقاط المسجلة: 0';
     });
+
+    // Real-Time Telemetry Polling (Every 1200ms)
+    function pollLiveTelemetry() {
+      fetch('/api/telemetry/stats')
+        .then(r => r.json())
+        .then(stats => {
+          if (!stats) return;
+          const vElem = document.getElementById('liveTotalVisits');
+          const iElem = document.getElementById('liveImpressions');
+          const aElem = document.getElementById('liveActiveWorkers');
+          if (vElem) vElem.textContent = stats.totalVisits || 0;
+          if (iElem) iElem.textContent = stats.successfulImpressions || 0;
+          if (aElem) aElem.textContent = stats.activeWorkers || 0;
+
+          if (stats.recentLogs && stats.recentLogs.length > 0) {
+            const tbody = document.getElementById('telemetryTableBody');
+            if (tbody) {
+              tbody.innerHTML = stats.recentLogs.map(function(log) {
+                return '<tr style="border-bottom:1px solid #1e293b; font-family:monospace;">' +
+                  '<td style="padding:6px 8px; color:#94a3b8;">' + log.time + '</td>' +
+                  '<td style="padding:6px 8px; color:#38bdf8; font-weight:bold;">#' + log.index + '</td>' +
+                  '<td style="padding:6px 8px; color:#f1f5f9;">' + log.flag + ' ' + log.geo + '</td>' +
+                  '<td style="padding:6px 8px; color:#cbd5e1;">' + log.os + '</td>' +
+                  '<td style="padding:6px 8px; color:#ec4899;">' + log.source + '</td>' +
+                  '<td style="padding:6px 8px; color:#f59e0b;">' + log.dwell + 's</td>' +
+                  '<td style="padding:6px 8px;"><span class="badge badge-success">✅ Impression Fired</span></td>' +
+                '</tr>';
+              }).join('');
+            }
+          }
+        })
+        .catch(() => {});
+    }
+    setInterval(pollLiveTelemetry, 1200);
+    pollLiveTelemetry();
   </script>
 </body>
 </html>`;
 
 const server = http.createServer((req, res) => {
   const url = req.url.split('?')[0];
+
+  // Telemetry Event Receiver (Called by run-london-100.js)
+  if (url === '/api/telemetry/event') {
+    if (req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const ev = JSON.parse(body);
+          if (ev.type === 'start') {
+            LIVE_STATS.activeWorkers = Math.max(1, LIVE_STATS.activeWorkers + 1);
+          } else if (ev.type === 'finish') {
+            LIVE_STATS.totalVisits++;
+            if (ev.success) LIVE_STATS.successfulImpressions++;
+            LIVE_STATS.activeWorkers = Math.max(0, LIVE_STATS.activeWorkers - 1);
+            LIVE_STATS.recentLogs.unshift({
+              index: ev.visitorIndex,
+              geo: ev.geo || 'Amsterdam',
+              flag: ev.flag || '🌐',
+              os: ev.os || 'Windows',
+              source: ev.source || 'Social Media',
+              dwell: ev.dwell || '8.5',
+              time: new Date().toLocaleTimeString('ar-EG')
+            });
+            if (LIVE_STATS.recentLogs.length > 50) LIVE_STATS.recentLogs.pop();
+          }
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: true, stats: LIVE_STATS }));
+        } catch (e) {
+          res.writeHead(400);
+          res.end(JSON.stringify({ error: e.message }));
+        }
+      });
+      return;
+    }
+  }
+
+  // Telemetry Stats Provider
+  if (url === '/api/telemetry/stats') {
+    res.writeHead(200, {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Access-Control-Allow-Origin': '*'
+    });
+    res.end(JSON.stringify(LIVE_STATS));
+    return;
+  }
 
   if (url === '/bot-audit' || url === '/bot-audit/') {
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });

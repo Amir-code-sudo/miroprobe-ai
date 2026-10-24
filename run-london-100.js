@@ -6,11 +6,33 @@
  */
 
 const { chromium } = require('playwright');
+const http = require('http');
 const https = require('https');
 const { GEO_PROFILES } = require('./geo-engine');
 const { getRandomTrafficSource, getRandomDeviceProfile } = require('./traffic-sources');
 const { getProxyForWorker } = require('./proxy-pool');
 const { getSessionPath } = require('./session-manager');
+
+// Send live real-time telemetry events to MiroProbe Cloud Dashboard
+function reportVisitorTelemetry(eventData) {
+  try {
+    const postData = JSON.stringify(eventData);
+    const req = http.request({
+      hostname: '127.0.0.1',
+      port: process.env.PORT || 3000,
+      path: '/api/telemetry/event',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(postData)
+      },
+      timeout: 800
+    });
+    req.on('error', () => {});
+    req.write(postData);
+    req.end();
+  } catch (e) {}
+}
 
 // Configuration
 const TARGET_URL = (process.argv[2] || process.env.TARGET_URL || 'https://cinewave-hub.pages.dev').trim().replace(/\/$/, '');
@@ -136,6 +158,16 @@ async function runSingleVisitor(browser, visitorIndex, activeGeo, stats) {
     popupPage = p;
   });
 
+  // Report visitor startup to Cloud Dashboard
+  reportVisitorTelemetry({
+    type: 'start',
+    visitorIndex,
+    geo: activeGeo.city,
+    flag: activeGeo.flag,
+    os: device.os,
+    source: source.nameEn
+  });
+
   try {
     // 1. Navigate to target URL and wait for full load
     await page.goto(fullUrl, { waitUntil: 'load', timeout: 40000 }).catch(async () => {
@@ -171,9 +203,33 @@ async function runSingleVisitor(browser, visitorIndex, activeGeo, stats) {
     stats.sources[source.id] = (stats.sources[source.id] || 0) + 1;
     stats.devices[device.os] = (stats.devices[device.os] || 0) + 1;
 
+    // Report visitor success to Cloud Dashboard
+    reportVisitorTelemetry({
+      type: 'finish',
+      visitorIndex,
+      geo: activeGeo.city,
+      flag: activeGeo.flag,
+      os: device.os,
+      source: source.nameEn,
+      dwell: elapsed,
+      success: true
+    });
+
     console.log(`  [Visitor ${String(visitorIndex).padStart(3, ' ')}/${TOTAL_VISITS}] ${activeGeo.flag} ${activeGeo.city} | ${device.icon} ${device.os.padEnd(7, ' ')} | ${source.icon} ${source.nameEn.padEnd(19, ' ')} | Dwell: ${elapsed}s | ✅ Impression Fired`);
   } catch (err) {
     stats.failed++;
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+    reportVisitorTelemetry({
+      type: 'finish',
+      visitorIndex,
+      geo: activeGeo.city,
+      flag: activeGeo.flag,
+      os: device.os,
+      source: source.nameEn,
+      dwell: elapsed,
+      success: false,
+      error: err.message
+    });
     console.log(`  [Visitor ${String(visitorIndex).padStart(3, ' ')}/${TOTAL_VISITS}] ⚠️ Connection timeout: ${err.message}`);
   } finally {
     await context.close().catch(() => {});
