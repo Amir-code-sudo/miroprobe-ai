@@ -112,6 +112,26 @@ function renderMainHtml(SCENARIOS) {
           <span style="color:#a855f7; margin: 0 8px;">4️⃣ Worker 4 (15%): <strong id="distP4" class="mono">81</strong></span>
         `}
       </div>
+
+      <!-- لوحة الإطلاق السحابية التفاعلية -->
+      <div style="margin-top: 16px; display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; border-top: 1px solid #1e293b; padding-top: 14px;">
+        <div style="flex: 1; min-width: 220px;">
+          <label style="font-size:12px; color:#94a3b8; display:block; margin-bottom:6px;">شخصية الـ Worker المستهدفة للضغط:</label>
+          <select id="cloudWorkerSelect" style="background:#090d16; border:1px solid #334155; color:#38bdf8; padding:8px 12px; border-radius:6px; width:100%; font-family:system-ui; font-weight:bold; font-size:13px;">
+            <option value="ALL">🌟 جميع الشخصيات (توزيع متوازن لكافة السيناريوهات)</option>
+            <option value="1">🇪🇬 Worker 1: الأكثر رواجاً والأنمي (Trending & Anime)</option>
+            <option value="2">🇸🇦 Worker 2: مشاهد الأفلام والسيرفرات (Cinema Streamer)</option>
+            <option value="3">🇺🇸 Worker 3: البحث وفرز الجودة بـ IMDb (Search & Filter)</option>
+            <option value="4">🇬🇧 Worker 4: متصفح الموبايل وعاشق الأنمي (Mobile Streamer)</option>
+          </select>
+        </div>
+        <button onclick="launchCloudLoad()" style="background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 13px; box-shadow: 0 4px 12px rgba(37,99,235,0.3); transition: transform 0.1s;">
+          ⚡ إطلاق محاكاة الضغط العالي (High-Scale Load)
+        </button>
+        <button onclick="launchCloudWave()" style="background: linear-gradient(135deg, #059669, #047857); color: #fff; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 13px; box-shadow: 0 4px 12px rgba(5,150,105,0.3); transition: transform 0.1s;">
+          🌊 إطلاق موجة الزوار السحابية (Parallel Swarm)
+        </button>
+      </div>
     </div>
 
     <!-- بطاقة نظام التخفي وتفادي WAF -->
@@ -369,6 +389,58 @@ function renderMainHtml(SCENARIOS) {
           } else {
             toast.style.borderColor = '#f87171';
             toast.innerHTML = '❌ خطأ: ' + (data.error || 'فشل البدء');
+          }
+        })
+        .catch(err => {
+          toast.style.borderColor = '#f87171';
+          toast.innerHTML = '❌ خطأ: ' + err.message;
+        });
+    }
+
+    function launchCloudLoad() {
+      const toast = document.getElementById('launchToast');
+      toast.style.display = 'block';
+      toast.style.borderColor = '#38bdf8';
+      const vpm = Number(slider.value) || 1000;
+      const persona = document.getElementById('cloudWorkerSelect').value;
+      const duration = (Number(durationInput.value) || 1) + 'm';
+      toast.innerHTML = '⚡ جاري إطلاق محاكاة ضغط سحابية فائق السرعة بمعدل <strong>' + vpm + ' زائر/دقيقة</strong> للـ Worker (' + persona + ') على سيرفر Azure السحابي...';
+      
+      fetch('/api/run-load?vpm=' + vpm + '&persona=' + persona + '&duration=' + duration, { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+          if (data.success) {
+            toast.style.borderColor = '#4ade80';
+            toast.innerHTML = '✅ اكتمل إرسال آلاف الزيارات السحابية بنجاح عبر بروتوكول HTTP/2! راقب الإحصائيات الآن.';
+            setTimeout(() => { toast.style.display = 'none'; }, 8000);
+          } else {
+            toast.style.borderColor = '#f87171';
+            toast.innerHTML = '❌ خطأ: ' + (data.error || 'فشل إطلاق المحاكاة');
+          }
+        })
+        .catch(err => {
+          toast.style.borderColor = '#f87171';
+          toast.innerHTML = '❌ خطأ: ' + err.message;
+        });
+    }
+
+    function launchCloudWave() {
+      const toast = document.getElementById('launchToast');
+      toast.style.display = 'block';
+      toast.style.borderColor = '#38bdf8';
+      const total = Number(totalVisitsInput.value) || 20;
+      toast.innerHTML = '🌊 جاري إطلاق موجة متصفحات حقيقية متزامنة سحابياً (' + total + ' زيارة) مقسمة على دفعات آمنة...';
+
+      fetch('/api/run-wave?count=' + total + '&workers=3', { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+          if (data.success) {
+            toast.style.borderColor = '#4ade80';
+            toast.innerHTML = '✅ تم إطلاق موجة المتصفحات السحابية (' + total + ' زيارة) في الخلفية بنجاح عبر سحابة Azure!';
+            setTimeout(() => { toast.style.display = 'none'; }, 8000);
+          } else {
+            toast.style.borderColor = '#f87171';
+            toast.innerHTML = '❌ خطأ: ' + (data.error || 'فشل إطلاق الموجة');
           }
         })
         .catch(err => {
@@ -784,6 +856,55 @@ const server = http.createServer((req, res) => {
       child.unref();
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ success: true, persona: personaNum }));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
+
+  if (url === '/api/run-load') {
+    const urlObj = new URL(req.url, `http://${req.headers.host || 'localhost:3000'}`);
+    const vpm = urlObj.searchParams.get('vpm') || '1000';
+    const persona = urlObj.searchParams.get('persona') || 'ALL';
+    const duration = urlObj.searchParams.get('duration') || '30s';
+    const target = urlObj.searchParams.get('target') || loadScenarios().targetUrl || 'https://cinewave-hub.pages.dev';
+    const { spawn } = require('child_process');
+
+    try {
+      const child = spawn('node', ['load-engine.js', target, vpm, duration, 'ALL', 'ALL_SOCIAL', 'BALANCED', persona], {
+        cwd: __dirname,
+        shell: true,
+        detached: true,
+        stdio: 'ignore'
+      });
+      child.unref();
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ success: true, target, vpm, persona }));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
+
+  if (url === '/api/run-wave') {
+    const urlObj = new URL(req.url, `http://${req.headers.host || 'localhost:3000'}`);
+    const count = parseInt(urlObj.searchParams.get('count') || '20', 10);
+    const workers = parseInt(urlObj.searchParams.get('workers') || '3', 10);
+    const target = urlObj.searchParams.get('target') || loadScenarios().targetUrl || 'https://cinewave-hub.pages.dev';
+    const { spawn } = require('child_process');
+
+    try {
+      const child = spawn('node', ['run-london-100.js', target, String(count), String(workers)], {
+        cwd: __dirname,
+        shell: true,
+        detached: true,
+        stdio: 'ignore'
+      });
+      child.unref();
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ success: true, target, count, workers }));
     } catch (err) {
       res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ error: err.message }));
