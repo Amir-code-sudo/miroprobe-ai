@@ -1,0 +1,266 @@
+{
+  "targetUrl": "https://cinewave-hub.pages.dev",
+  "siteTitle": "سينما ويف | CineWave - مشاهدة وتحميل أحدث الأفلام والمسلسلات والأنمي بجودة 4K",
+  "domainCategory": "بوابة بث الأفلام ومسلسلات الأنمي (Movies & Anime Streaming Hub)",
+  "summaryAr": "تم فحص الموقع بنجاح واستكشاف 0 صفحة فرعية، 22 زر تفاعلي، و 3 حقل إدخال، وتوليد 4 شخصيات واقعية تتماشى مع طبيعة الموقع.",
+  "detectedEndpoints": [
+    "/"
+  ],
+  "uxRisksAr": [
+    "الضغط المتزامن على سيرفرات البث ومشغلات الفيديو (Video Iframes) عند ذروة المشاهدات الحية.",
+    "تأخر استجابة النوافذ المنبثقة (Modals) ومشغلات الـ YouTube على أجهزة الهواتف ذات الموارد المحدودة.",
+    "تكرار نقرات المستخدمين على أزرار التحميل وسيرفرات المشاهدة واحتمالية حظرها بواسطة مانع الإعلانات (AdBlockers)."
+  ],
+  "personas": [
+    {
+      "id": "trending-anime-explorer",
+      "nameAr": "مستكشف الأعمال الأكثر رواجاً وقسم الأنمي",
+      "nameEn": "The Trending & Anime Explorer",
+      "archetype": "يتفاعل مع أزرار التريند ويتصفح قوائم الأنمي والمسلسلات الحديثة",
+      "geoCode": "EG",
+      "geoNameAr": "مصر (القاهرة)",
+      "geoFlag": "🇪🇬",
+      "device": "desktop",
+      "hardware": "NVIDIA GeForce RTX 3070",
+      "networkProfile": "Fiber / High-Speed",
+      "patienceScore": 85,
+      "trafficSharePercent": 35,
+      "descriptionAr": "يقوم بزيارة الموقع، النقر على زر الأكثر رواجاً لفحص العروض الـ VIP، ثم الانتقال لقسم الأنمي وتصفح القائمة.",
+      "potentialBugFocusAr": "فحص استجابة نوافذ المودال (Modals) وسرعة تصفية الأنمي بدون إعادة تحميل الصفحة.",
+      "steps": [
+        {
+          "id": "p1-1",
+          "action": "navigate",
+          "labelAr": "فتح منصة سينما ويف وفحص الواجهة الرئيسية",
+          "path": "/",
+          "selector": "body",
+          "expectedThinkTimeMs": 2000
+        },
+        {
+          "id": "p1-2",
+          "action": "scroll",
+          "labelAr": "تمرير الصفحة لتصفح البانر الترويجي",
+          "path": "/",
+          "selector": "body",
+          "expectedThinkTimeMs": 1800
+        },
+        {
+          "id": "p1-3",
+          "action": "click",
+          "labelAr": "الضغط على زر الأكثر رواجاً لفتح نافذة السيرفر السريع",
+          "path": "/",
+          "selector": "button:has-text(\"الأكثر رواجاً\"), [onclick*=\"openVipModal\"]",
+          "expectedThinkTimeMs": 2500
+        },
+        {
+          "id": "p1-4",
+          "action": "click",
+          "labelAr": "إغلاق نافذة السيرفر السريع بعد استكشافها",
+          "path": "/",
+          "selector": "#vipModal button:has-text(\"إلغاء\"), #vipModal button[onclick*=\"closeVipModal\"], #vipModal button",
+          "expectedThinkTimeMs": 1500
+        },
+        {
+          "id": "p1-5",
+          "action": "click",
+          "labelAr": "الانتقال لقسم تصنيف أنمي ياباني (Anime)",
+          "path": "/",
+          "selector": "button:has-text(\"أنمي ياباني\"), button[onclick*=\"anime\"]",
+          "expectedThinkTimeMs": 2200
+        },
+        {
+          "id": "p1-6",
+          "action": "scroll",
+          "labelAr": "التمرير داخل قائمة الأنمي لاستكشاف الحلقات",
+          "path": "/",
+          "selector": "#moviesGrid",
+          "expectedThinkTimeMs": 3000
+        }
+      ]
+    },
+    {
+      "id": "cinema-streamer",
+      "nameAr": "مشاهد الأفلام ومشغل سيرفرات البث",
+      "nameEn": "The Cinema Streamer & Server Switcher",
+      "archetype": "يفتح بطاقات الأفلام، يشاهد العرض الترويجي، ويتنقل بين سيرفرات المشاهدة والتحميل",
+      "geoCode": "SA",
+      "geoNameAr": "السعودية (الرياض)",
+      "geoFlag": "🇸🇦",
+      "device": "desktop",
+      "hardware": "Apple M-Series Engine",
+      "networkProfile": "5G High-Bandwidth",
+      "patienceScore": 90,
+      "trafficSharePercent": 30,
+      "descriptionAr": "ينقر على أحد الأفلام في الشبكة لفتح المشغل السينمائي وتجربة التبديل بين السيرفرات والتحميل.",
+      "potentialBugFocusAr": "فحص استدعاءات الـ Popunder ونوافذ الـ Iframe واستقرار مشغل الفيديو عند التنقل.",
+      "steps": [
+        {
+          "id": "p2-1",
+          "action": "navigate",
+          "labelAr": "دخول الموقع وتصفح الأعمال المتاحة",
+          "path": "/",
+          "selector": "body",
+          "expectedThinkTimeMs": 1800
+        },
+        {
+          "id": "p2-2",
+          "action": "scroll",
+          "labelAr": "التمرير نحو شبكة الأفلام المميزة",
+          "path": "/",
+          "selector": "#moviesGrid",
+          "expectedThinkTimeMs": 2000
+        },
+        {
+          "id": "p2-3",
+          "action": "click",
+          "labelAr": "الضغط على بطاقة فيلم (مثل Dune أو Solo Leveling) لفتح نافذة المشاهدة",
+          "path": "/",
+          "selector": ".movie-card, #moviesGrid > div, button:has-text(\"مشاهدة\")",
+          "expectedThinkTimeMs": 2800
+        },
+        {
+          "id": "p2-4",
+          "action": "click",
+          "labelAr": "تجربة التبديل إلى سيرفر المشاهدة 2 (SERVER 2 - 4K)",
+          "path": "/",
+          "selector": "button:has-text(\"SERVER 2\"), button:has-text(\"سيرفر 2\"), .server-btn:nth-child(2)",
+          "expectedThinkTimeMs": 2200
+        },
+        {
+          "id": "p2-5",
+          "action": "click",
+          "labelAr": "الضغط على زر تحميل الفيلم بجودة 1080p FHD",
+          "path": "/",
+          "selector": "button:has-text(\"تحميل 1080p\"), [onclick*=\"handleDownloadClick\"]",
+          "expectedThinkTimeMs": 2500
+        },
+        {
+          "id": "p2-6",
+          "action": "click",
+          "labelAr": "إغلاق مشغل الفيلم والعودة للقائمة",
+          "path": "/",
+          "selector": "#watchModal button[onclick*=\"closeWatchModal\"], #watchModal button:first-child",
+          "expectedThinkTimeMs": 1600
+        }
+      ]
+    },
+    {
+      "id": "search-filter-guru",
+      "nameAr": "الباحث المباشر ومفرز الجودة العالمية",
+      "nameEn": "The Search & Quality Filterer",
+      "archetype": "يبحث بالاسم ويفرز الأعمال بحسب تقييم IMDb الأعلى ويجرب تصنيفات الأكشن",
+      "geoCode": "US",
+      "geoNameAr": "أمريكا (نيويورك)",
+      "geoFlag": "🇺🇸",
+      "device": "desktop",
+      "hardware": "Intel Iris Xe Graphics",
+      "networkProfile": "WiFi",
+      "patienceScore": 75,
+      "trafficSharePercent": 20,
+      "descriptionAr": "يستخدم محرك البحث الداخلي لكتابة اسم فيلم ثم يغير خيارات الفرز حسب التقييم.",
+      "potentialBugFocusAr": "اختبار دقة البحث التفاعلي (Live Filter) وكفاءة خوارزمية ترتيب النتائج.",
+      "steps": [
+        {
+          "id": "p3-1",
+          "action": "navigate",
+          "labelAr": "فتح المنصة والتركيز على شريط البحث",
+          "path": "/",
+          "selector": "body",
+          "expectedThinkTimeMs": 1800
+        },
+        {
+          "id": "p3-2",
+          "action": "fill",
+          "labelAr": "كتابة اسم عمل في حقل البحث (Dune)",
+          "path": "/",
+          "selector": "#searchInput, input[type=\"text\"]",
+          "fillValue": "Dune",
+          "expectedThinkTimeMs": 2000
+        },
+        {
+          "id": "p3-3",
+          "action": "select",
+          "labelAr": "فرز النتائج بحسب الأعلى تقييماً (IMDb Rating)",
+          "path": "/",
+          "selector": "#sortSelect, select",
+          "selectValue": "rating",
+          "expectedThinkTimeMs": 2200
+        },
+        {
+          "id": "p3-4",
+          "action": "click",
+          "labelAr": "التنقل إلى تصنيف أفلام أكشن وحركة (Action)",
+          "path": "/",
+          "selector": "button:has-text(\"أكشن وحركة\"), button[onclick*=\"action\"]",
+          "expectedThinkTimeMs": 2000
+        },
+        {
+          "id": "p3-5",
+          "action": "scroll",
+          "labelAr": "تصفح قائمة أفلام الأكشن المتوفرة",
+          "path": "/",
+          "selector": "#moviesGrid",
+          "expectedThinkTimeMs": 2500
+        }
+      ]
+    },
+    {
+      "id": "mobile-binge-streamer",
+      "nameAr": "متصفح الهاتف وعاشق مسلسلات الأنمي",
+      "nameEn": "The Mobile Binge Streamer",
+      "archetype": "يتصفح عبر شاشة الهاتف ويتنقل بلمسات سريعة بين المسلسلات",
+      "geoCode": "GB",
+      "geoNameAr": "بريطانيا (لندن)",
+      "geoFlag": "🇬🇧",
+      "device": "mobile",
+      "hardware": "Qualcomm Adreno 730",
+      "networkProfile": "4G LTE Mobile",
+      "patienceScore": 60,
+      "trafficSharePercent": 15,
+      "descriptionAr": "يقوم بالتمرير السريع عبر الموبايل، النقر على زر الأنمي السريع، وفتح بطاقة عمل للمعاينة.",
+      "potentialBugFocusAr": "استجابة الواجهة للشاشات العمودية الصغيرة وتجربة التمرير اللمسي.",
+      "steps": [
+        {
+          "id": "p4-1",
+          "action": "navigate",
+          "labelAr": "فتح المنصة عبر شاشة الهاتف المحمول",
+          "path": "/",
+          "selector": "body",
+          "expectedThinkTimeMs": 2000
+        },
+        {
+          "id": "p4-2",
+          "action": "click",
+          "labelAr": "الضغط على زر الأنمي السريع في الهيدر",
+          "path": "/",
+          "selector": "button:has-text(\"الأنمي\"), [onclick*=\"anime\"]",
+          "expectedThinkTimeMs": 2000
+        },
+        {
+          "id": "p4-3",
+          "action": "scroll",
+          "labelAr": "تمرير سريع باللمس (Touch Swipe)",
+          "path": "/",
+          "selector": "#moviesGrid",
+          "expectedThinkTimeMs": 2500
+        },
+        {
+          "id": "p4-4",
+          "action": "click",
+          "labelAr": "فتح بطاقة فيلم لمعاينة التفاصيل على الموبايل",
+          "path": "/",
+          "selector": ".movie-card, #moviesGrid > div",
+          "expectedThinkTimeMs": 2500
+        },
+        {
+          "id": "p4-5",
+          "action": "click",
+          "labelAr": "إغلاق المودال والعودة للتصفح",
+          "path": "/",
+          "selector": "#watchModal button[onclick*=\"closeWatchModal\"], #watchModal button",
+          "expectedThinkTimeMs": 1500
+        }
+      ]
+    }
+  ]
+}

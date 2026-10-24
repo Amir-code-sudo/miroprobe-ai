@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  miroprobe-ai:
+    build: .
+    image: miroprobe-ai:latest
+    container_name: miroprobe-ai-cloud
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+      - HEADLESS=true
+      - DOCKER=true
+    shm_size: '2gb'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
