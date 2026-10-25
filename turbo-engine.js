@@ -123,11 +123,17 @@ async function runVisitor(browser, visitorIndex, stats) {
   let beaconResolve;
   const beaconPromise = new Promise(res => { beaconResolve = res; });
 
-  // Event-Driven Beacon Detection: Listen for ad popups & tracking verification beacons
+  // Event-Driven Beacon Detection: Listen for ad popups & ensure complete advertiser offer delivery
   page.on('popup', async (popup) => {
     impressionRecorded = true;
-    await popup.waitForTimeout(300).catch(() => {});
-    await popup.close().catch(() => {});
+    try {
+      // 1. Wait for Adsterra 302 redirect chain to fully reach advertiser landing page
+      await popup.waitForLoadState('domcontentloaded', { timeout: 6000 }).catch(() => {});
+      // 2. Allow 1.2s for advertiser postback & tracking beacons to register on Adsterra servers
+      await popup.waitForTimeout(1200).catch(() => {});
+      // 3. Cleanly close the ad popup
+      await popup.close().catch(() => {});
+    } catch (_) {}
     beaconResolve();
   });
 
@@ -136,7 +142,6 @@ async function runVisitor(browser, visitorIndex, stats) {
     // Adsterra Popunder verified click pixel or direct delivery
     if (u.includes('puclc') || u.includes('/4/bddf0ad130b9e3b902fe7ce3a79e5d11') || u.includes('delivery')) {
       impressionRecorded = true;
-      setTimeout(() => beaconResolve(), 300);
     }
   });
 
@@ -157,16 +162,16 @@ async function runVisitor(browser, visitorIndex, stats) {
     // 2. Allow 2.0s for Adsterra anti-bot handshake and transparent click-overlay injection
     await page.waitForTimeout(2000).catch(() => {});
 
-    // 3. User activation click directly on the ad overlay
+    // 3. User activation click directly on the ad overlay to trigger popup
     await page.mouse.move(250 + Math.random() * 200, 200 + Math.random() * 150, { steps: 3 }).catch(() => {});
     await page.mouse.down().catch(() => {});
-    await page.waitForTimeout(50).catch(() => {});
+    await page.waitForTimeout(60).catch(() => {});
     await page.mouse.up().catch(() => {});
 
-    // 4. Event-Driven Wait: Exits once verified puclc beacon or popup fires (or 1.8s timeout)
+    // 4. Event-Driven Wait: Waits for full popup redirect to advertiser offer (or fallback timeout)
     await Promise.race([
       beaconPromise,
-      new Promise(r => setTimeout(r, 1800))
+      new Promise(r => setTimeout(r, 4500))
     ]);
 
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
@@ -208,7 +213,7 @@ async function main() {
   console.log(`  Target Volume      : ${TOTAL_VISITS} Visits`);
   console.log(`  Hardware Topologies: ${DETECTED_CORES} CPU Threads | ${totalMemMB} MB Total RAM (${freeMemMB} MB Free)`);
   console.log(`  Adaptive Concurrency: ${CONCURRENCY} Parallel Worker Threads (Offscreen Blink Asset-Stripped)`);
-  console.log(`  Optimization Mode  : Offscreen Headed (100% Anti-Bot Bypass) + Verified Adsterra PUCLC Beacons`);
+  console.log(`  Optimization Mode  : Full Advertiser Delivery (Follows 302 Redirects) + Zero-Window Overhead`);
   console.log('============================================================================\n');
 
   const browser = await chromium.launch({
