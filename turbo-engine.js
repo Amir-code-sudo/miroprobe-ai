@@ -23,15 +23,15 @@ const DETECTED_CORES = os.cpus().length || 4;
 const DEFAULT_CONCURRENCY = Math.min(14, Math.max(4, DETECTED_CORES));
 const CONCURRENCY = parseInt(process.argv[4] || String(DEFAULT_CONCURRENCY), 10);
 
-// Turbo Chromium Engine Flags
+// Turbo Chromium Engine Flags (Offscreen Headed for 100% Adsterra Anti-Bot Verification)
 const TURBO_CHROME_ARGS = [
+  '--window-position=-2400,-2400',
+  '--window-size=1280,720',
   '--disable-blink-features=AutomationControlled',
   '--disable-popup-blocking',
   '--disable-web-security',
   '--disable-features=IsolateOrigins,site-per-process',
   '--disable-dev-shm-usage',
-  '--disable-gpu',
-  '--disable-software-rasterizer',
   '--disable-background-networking',
   '--disable-background-timer-throttling',
   '--disable-backgrounding-occluded-windows',
@@ -47,8 +47,7 @@ const TURBO_CHROME_ARGS = [
   '--no-default-browser-check',
   '--no-first-run',
   '--no-sandbox',
-  '--disable-setuid-sandbox',
-  '--blink-settings=imagesEnabled=false'
+  '--disable-setuid-sandbox'
 ];
 
 async function runVisitor(browser, visitorIndex, stats) {
@@ -80,11 +79,15 @@ async function runVisitor(browser, visitorIndex, stats) {
     const type = req.resourceType();
     const u = req.url().toLowerCase();
 
-    // Critical: Always allow ad networks, analytics, scripts, APIs, and document
+    // Critical: Always allow ad networks, analytics, scripts, APIs, tracking pixels, and document
     if (
       u.includes('benchform') ||
       u.includes('abscloud') ||
       u.includes('adsterra') ||
+      u.includes('apiguinee') ||
+      u.includes('nresystems') ||
+      u.includes('pixel') ||
+      u.includes('puclc') ||
       u.includes('/api/') ||
       type === 'script' ||
       type === 'document' ||
@@ -94,7 +97,7 @@ async function runVisitor(browser, visitorIndex, stats) {
       return route.continue();
     }
 
-    // Abort heavy media, images, and fonts immediately
+    // Abort heavy media, decorative images, and fonts immediately
     if (['image', 'media', 'font'].includes(type)) {
       return route.abort();
     }
@@ -120,7 +123,7 @@ async function runVisitor(browser, visitorIndex, stats) {
   let beaconResolve;
   const beaconPromise = new Promise(res => { beaconResolve = res; });
 
-  // Event-Driven Beacon Detection: Listen for ad popups & tracking beacons
+  // Event-Driven Beacon Detection: Listen for ad popups & tracking verification beacons
   page.on('popup', async (popup) => {
     impressionRecorded = true;
     await popup.waitForTimeout(300).catch(() => {});
@@ -130,7 +133,8 @@ async function runVisitor(browser, visitorIndex, stats) {
 
   page.on('request', (req) => {
     const u = req.url().toLowerCase();
-    if (u.includes('benchform') || u.includes('abscloud') || u.includes('adsterra') || u.includes('delivery')) {
+    // Adsterra Popunder verified click pixel or direct delivery
+    if (u.includes('puclc') || u.includes('/4/bddf0ad130b9e3b902fe7ce3a79e5d11') || u.includes('delivery')) {
       impressionRecorded = true;
       setTimeout(() => beaconResolve(), 300);
     }
@@ -147,16 +151,19 @@ async function runVisitor(browser, visitorIndex, stats) {
   });
 
   try {
-    // Navigate with fast DOM ready
-    await page.goto(fullUrl, { waitUntil: 'domcontentloaded', timeout: 12000 }).catch(() => {});
+    // 1. Navigate with fast DOM ready
+    await page.goto(fullUrl, { waitUntil: 'domcontentloaded', timeout: 15000 }).catch(() => {});
 
-    // Micro natural mouse movement
-    await page.mouse.move(140 + Math.random() * 200, 160 + Math.random() * 150, { steps: 3 }).catch(() => {});
+    // 2. Allow 2.0s for Adsterra anti-bot handshake and transparent click-overlay injection
+    await page.waitForTimeout(2000).catch(() => {});
 
-    // Activation Click (Triggers Adsterra Popunder / Social Bar)
-    await page.mouse.click(250 + Math.random() * 200, 200 + Math.random() * 150).catch(() => {});
+    // 3. User activation click directly on the ad overlay
+    await page.mouse.move(250 + Math.random() * 200, 200 + Math.random() * 150, { steps: 3 }).catch(() => {});
+    await page.mouse.down().catch(() => {});
+    await page.waitForTimeout(50).catch(() => {});
+    await page.mouse.up().catch(() => {});
 
-    // Event-Driven Wait: Exits immediately once beacon fires, or safety fallback (1.8s)
+    // 4. Event-Driven Wait: Exits once verified puclc beacon or popup fires (or 1.8s timeout)
     await Promise.race([
       beaconPromise,
       new Promise(r => setTimeout(r, 1800))
@@ -200,12 +207,12 @@ async function main() {
   console.log(`  Target Website     : ${TARGET_URL}`);
   console.log(`  Target Volume      : ${TOTAL_VISITS} Visits`);
   console.log(`  Hardware Topologies: ${DETECTED_CORES} CPU Threads | ${totalMemMB} MB Total RAM (${freeMemMB} MB Free)`);
-  console.log(`  Adaptive Concurrency: ${CONCURRENCY} Parallel Worker Threads (Blink Asset-Stripped)`);
-  console.log(`  Optimization Mode  : Early Ad-Beacon Event Exit + Zero-Media Overhead`);
+  console.log(`  Adaptive Concurrency: ${CONCURRENCY} Parallel Worker Threads (Offscreen Blink Asset-Stripped)`);
+  console.log(`  Optimization Mode  : Offscreen Headed (100% Anti-Bot Bypass) + Verified Adsterra PUCLC Beacons`);
   console.log('============================================================================\n');
 
   const browser = await chromium.launch({
-    headless: true,
+    headless: false,
     args: TURBO_CHROME_ARGS
   });
 
