@@ -61,12 +61,6 @@ async function runVisitor(browser, visitorIndex, stats) {
 
   const workerProxy = getProxyForWorker(visitorIndex) || (process.env.PROXY_SERVER ? { server: process.env.PROXY_SERVER } : undefined);
 
-  // Dynamic Multi-Regional Residential IP spoofing for upstream reverse proxies
-  const r1 = Math.floor(20 + Math.random() * 200);
-  const r2 = Math.floor(10 + Math.random() * 240);
-  const r3 = Math.floor(2 + Math.random() * 250);
-  const dynamicIp = `156.${r1}.${r2}.${r3}`;
-
   const context = await browser.newContext({
     ...(workerProxy ? { proxy: workerProxy } : {}),
     userAgent: device.userAgent,
@@ -79,10 +73,6 @@ async function runVisitor(browser, visitorIndex, stats) {
     permissions: ['geolocation'],
     extraHTTPHeaders: {
       'Accept-Language': 'ar-EG,ar;q=0.9,en-US;q=0.8,en;q=0.7',
-      'X-Forwarded-For': dynamicIp,
-      'CF-Connecting-IP': dynamicIp,
-      'X-Real-IP': dynamicIp,
-      'True-Client-IP': dynamicIp,
       ...(source.referrer ? { 'Referer': source.referrer } : {})
     }
   });
