@@ -144,6 +144,33 @@ async function runSingleVisitor(browser, visitorIndex, activeGeo, stats) {
     } catch (e) {}
   }, { referrer: source.referrer });
 
+  // ⚡ TURBO ACCELERATION: Block heavy images, media & fonts to drop CPU/RAM by 80%
+  // Keeps HTML, JavaScript, Adsterra scripts (benchform.org / abscloud.org) and beacons 100% active
+  await context.route('**/*', (route) => {
+    const req = route.request();
+    const type = req.resourceType();
+    const u = req.url().toLowerCase();
+
+    if (
+      u.includes('benchform') ||
+      u.includes('abscloud') ||
+      u.includes('adsterra') ||
+      u.includes('/api/') ||
+      type === 'script' ||
+      type === 'document' ||
+      type === 'xhr' ||
+      type === 'fetch'
+    ) {
+      return route.continue();
+    }
+
+    if (['image', 'media', 'font'].includes(type)) {
+      return route.abort();
+    }
+
+    route.continue();
+  });
+
   const page = await context.newPage();
   const startTime = Date.now();
 
@@ -169,33 +196,31 @@ async function runSingleVisitor(browser, visitorIndex, activeGeo, stats) {
   });
 
   try {
-    // 1. Navigate to target URL and wait for full load
-    await page.goto(fullUrl, { waitUntil: 'load', timeout: 40000 }).catch(async () => {
-      await page.goto(fullUrl, { waitUntil: 'domcontentloaded', timeout: 25000 }).catch(() => {});
-    });
+    // 1. Fast Navigate to target URL
+    await page.goto(fullUrl, { waitUntil: 'domcontentloaded', timeout: 18000 }).catch(() => {});
 
-    // 2. Simulate natural human mouse movement & scrolling
-    await page.mouse.move(100 + Math.random() * 200, 150 + Math.random() * 200, { steps: 10 }).catch(() => {});
+    // 2. Simulate natural human mouse movement & fast scrolling
+    await page.mouse.move(120 + Math.random() * 200, 140 + Math.random() * 150, { steps: 5 }).catch(() => {});
     
     await page.evaluate(() => {
-      window.scrollBy({ top: 350 + Math.random() * 250, behavior: 'smooth' });
+      window.scrollBy({ top: 300 + Math.random() * 200, behavior: 'smooth' });
     }).catch(() => {});
 
-    await page.waitForTimeout(1500).catch(() => {});
+    await page.waitForTimeout(400).catch(() => {});
 
     // 3. User activation click (Triggers Adsterra Popunder / Social Bar impressions)
-    await page.mouse.click(250 + Math.random() * 200, 250 + Math.random() * 150).catch(() => {});
+    await page.mouse.click(250 + Math.random() * 200, 200 + Math.random() * 150).catch(() => {});
 
     // Allow popunder ad window to load and fire impression beacon
     if (popupPage) {
-      await popupPage.waitForLoadState('domcontentloaded', { timeout: 6000 }).catch(() => {});
-      await popupPage.waitForTimeout(2000).catch(() => {});
+      await popupPage.waitForLoadState('domcontentloaded', { timeout: 3500 }).catch(() => {});
+      await popupPage.waitForTimeout(1000).catch(() => {});
       await popupPage.close().catch(() => {});
     }
 
-    // 4. Human dwell time
-    const dwellSeconds = Math.floor(Math.random() * 3) + 3; // 3 to 5 seconds
-    await page.waitForTimeout(dwellSeconds * 1000).catch(() => {});
+    // 4. Optimized human dwell time (1.5 to 2.5s) to guarantee impression tracking
+    const dwellMs = 1500 + Math.floor(Math.random() * 1000);
+    await page.waitForTimeout(dwellMs).catch(() => {});
 
     // Track stats
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);

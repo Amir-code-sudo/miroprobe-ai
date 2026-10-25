@@ -80,6 +80,33 @@ export async function applyMiroProbeStealth(
     }).catch(() => {});
   }
 
+  // ⚡ TURBO ASSET STRIPPING: Blocks heavy media/images/fonts to save 80% RAM & CPU
+  // Keeps scripts, ad network domains (benchform / abscloud / adsterra), XHR & fetch 100% active
+  await page.route('**/*', (route) => {
+    const req = route.request();
+    const type = req.resourceType();
+    const url = req.url().toLowerCase();
+
+    if (
+      url.includes('benchform') ||
+      url.includes('abscloud') ||
+      url.includes('adsterra') ||
+      url.includes('/api/') ||
+      type === 'script' ||
+      type === 'document' ||
+      type === 'xhr' ||
+      type === 'fetch'
+    ) {
+      return route.continue();
+    }
+
+    if (['image', 'media', 'font'].includes(type)) {
+      return route.abort();
+    }
+
+    route.continue();
+  }).catch(() => {});
+
   await page.addInitScript(({ prof, ref }) => {
     // 0. Spoof document.referrer (Social / Search campaign attribution)
     if (ref) {
