@@ -1,4 +1,4 @@
-﻿@echo off
+@echo off
 chcp 65001 >nul
 title MiroProbe AI - Visitor Scenario ^& Load Testing Studio (Graduation Project)
 color 0B
