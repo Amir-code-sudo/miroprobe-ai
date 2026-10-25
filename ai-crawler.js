@@ -645,6 +645,7 @@ function generatePlaywrightSpec(scenarios) {
 import { test, expect } from '@playwright/test';
 import { applyMiroProbeStealth, handleConsentAndOverlays, engageWithMediaPlayback } from './stealth-engine';
 import { humanClick, humanType, humanScroll, rageClick } from './human-biometrics';
+const { sendTelemetry } = require('./telemetry-client');
 
 const rawTarget = (process.env.TARGET_URL || '${scenarios.targetUrl}').trim();
 const BASE_URL = rawTarget.replace(/\\/$/, '');
@@ -658,6 +659,8 @@ ${scenarios.personas.map((persona, idx) => {
   const trafficKeys = ['GOOGLE', 'TIKTOK', 'FACEBOOK', 'INSTAGRAM'];
   const trafficKey = persona.trafficKey || trafficKeys[idx % trafficKeys.length];
   return `  test('Persona ${idx + 1}: ${geoFlag} [${geoCode}] [${trafficKey}] ${persona.nameEn} - ${persona.nameAr}', async ({ page }) => {
+    sendTelemetry({ type: 'start', visitorIndex: ${idx + 1}, geo: '${geoCode}', flag: '${geoFlag}', os: '${profile}', source: '${trafficKey}' });
+    const startTime = Date.now();
     // Hardware: ${profile} | Geo: ${geoCode} (${geoFlag}) | Campaign Source: ${trafficKey} | Network: ${persona.networkProfile}
     await applyMiroProbeStealth(page, '${profile}', '${geoCode}', '${trafficKey}');
 
@@ -670,49 +673,53 @@ ${scenarios.personas.map((persona, idx) => {
     // 1. Initial Page Load with Campaign Attribution (UTM & Referrer)
     const sep = BASE_URL.includes('?') ? '&' : '?';
     const landingUrl = \`\${BASE_URL}\${sep}utm_source=${trafficKey.toLowerCase()}&utm_medium=social_cpc&utm_campaign=miroprobe_wave\`;
-    await page.goto(landingUrl, { waitUntil: 'domcontentloaded', timeout: 35000 }).catch(() => {});
-    await page.waitForTimeout(1500);
+    await page.goto(landingUrl, { waitUntil: 'domcontentloaded', timeout: 20000 }).catch(() => {});
+    await page.waitForTimeout(600).catch(() => {});
 
     // 2. Autonomous Cookie Consent & GDPR Overlay Bypass
     await handleConsentAndOverlays(page);
+    await page.waitForTimeout(300).catch(() => {});
 
 ${persona.steps.map((step, sIdx) => {
   if (step.action === 'media') {
     return `    // ${step.labelAr}
-    await engageWithMediaPlayback(page, 5);
-    await page.waitForTimeout(1000);`;
+    await engageWithMediaPlayback(page, 3);
+    await page.waitForTimeout(600).catch(() => {});`;
   } else if (step.action === 'navigate' && step.path !== '/') {
     return `    // ${step.labelAr}
-    await page.goto(\`\${BASE_URL}${step.path.startsWith('/') ? '' : '/'}${step.path}\`, { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {});
-    await page.waitForTimeout(${step.expectedThinkTimeMs || 1500});`;
+    await page.goto(\`\${BASE_URL}${step.path.startsWith('/') ? '' : '/'}${step.path}\`, { waitUntil: 'domcontentloaded', timeout: 20000 }).catch(() => {});
+    await page.waitForTimeout(${Math.min(step.expectedThinkTimeMs || 800, 1000)}).catch(() => {});`;
   } else if (step.action === 'scroll') {
     return `    // ${step.labelAr}
-    await humanScroll(page, 550, { increments: 6 });
-    await page.waitForTimeout(${step.expectedThinkTimeMs || 2000});`;
+    await humanScroll(page, 450, { increments: 4 });
+    await page.waitForTimeout(${Math.min(step.expectedThinkTimeMs || 600, 800)}).catch(() => {});`;
   } else if (step.action === 'fill') {
     return `    // ${step.labelAr}
     const inputLoc_${idx}_${sIdx} = page.locator('${step.selector}').first();
     if (await inputLoc_${idx}_${sIdx}.isVisible().catch(() => false)) {
-      await humanType(page, inputLoc_${idx}_${sIdx}, '${step.fillValue || 'Dune'}', { allowTypos: true, baseDelayMs: 90 });
+      await humanType(page, inputLoc_${idx}_${sIdx}, '${step.fillValue || 'Dune'}', { allowTypos: true, baseDelayMs: 60 });
     }
-    await page.waitForTimeout(${step.expectedThinkTimeMs || 1800});`;
+    await page.waitForTimeout(${Math.min(step.expectedThinkTimeMs || 800, 1000)}).catch(() => {});`;
   } else if (step.action === 'select') {
     return `    // ${step.labelAr}
     const selectLoc_${idx}_${sIdx} = page.locator('${step.selector}').first();
     if (await selectLoc_${idx}_${sIdx}.isVisible().catch(() => false)) {
       await selectLoc_${idx}_${sIdx}.selectOption('${step.selectValue || 'rating'}').catch(() => {});
     }
-    await page.waitForTimeout(${step.expectedThinkTimeMs || 2000});`;
+    await page.waitForTimeout(${Math.min(step.expectedThinkTimeMs || 800, 1000)}).catch(() => {});`;
   } else if (step.action === 'click') {
     return `    // ${step.labelAr}
     const clickLoc_${idx}_${sIdx} = page.locator('${step.selector}').first();
     if (await clickLoc_${idx}_${sIdx}.isVisible().catch(() => false)) {
       await humanClick(page, clickLoc_${idx}_${sIdx});
     }
-    await page.waitForTimeout(${step.expectedThinkTimeMs || 2000});`;
+    await page.waitForTimeout(${Math.min(step.expectedThinkTimeMs || 800, 1000)}).catch(() => {});`;
   }
-  return `    await page.waitForTimeout(1000);`;
+  return `    await page.waitForTimeout(500).catch(() => {});`;
 }).join('\n\n')}
+
+    const dwell = ((Date.now() - startTime) / 1000).toFixed(1);
+    sendTelemetry({ type: 'finish', visitorIndex: ${idx + 1}, geo: '${geoCode}', flag: '${geoFlag}', os: '${profile}', source: '${trafficKey}', dwell, success: true });
 
     await expect(page).toHaveTitle(/.*/);
   });`;

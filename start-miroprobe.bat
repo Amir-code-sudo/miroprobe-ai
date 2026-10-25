@@ -417,9 +417,9 @@ set /p custom_vol="Enter visits count (Press Enter to keep %TOTAL_VISITS%): "
 if not "%custom_vol%"=="" set "TOTAL_VISITS=%custom_vol%"
 echo.
 echo Select Execution Engine:
-echo   [1] ⚡ Extreme Turbo Engine (أسرع 10 أضعاف + توفير 80%% رامات ومعالج + خروج ذكي بعد إشعار الإعلان)
-echo   [2] 🖥️ Visible Chrome Windows on Screen (Headed - ترى المتصفحات تتحرك أمامك)
-echo   [3] ⚡ Standard Headless Swarm
+echo   [1] Extreme Turbo Engine (Fastest: Early Beacon Exit, Low RAM/CPU)
+echo   [2] Visible Chrome Windows on Screen (Headed)
+echo   [3] Standard Headless Swarm
 echo.
 set "swarm_mode=1"
 set /p swarm_mode="Enter choice (1-3, default is 1): "
