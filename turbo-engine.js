@@ -13,6 +13,7 @@ const { chromium } = require('playwright');
 const os = require('os');
 const { getRandomTrafficSource, getRandomDeviceProfile } = require('./traffic-sources');
 const { sendTelemetry } = require('./telemetry-client');
+const { getProxyForWorker } = require('./proxy-pool');
 
 // Configuration
 const TARGET_URL = (process.argv[2] || process.env.TARGET_URL || 'https://cinewave-hub.pages.dev').trim().replace(/\/$/, '');
@@ -52,13 +53,22 @@ const TURBO_CHROME_ARGS = [
 
 async function runVisitor(browser, visitorIndex, stats) {
   const startTime = Date.now();
-  const device = getRandomDeviceProfile();
+  const device = getRandomDeviceProfile('DESKTOP_ONLY');
   const source = getRandomTrafficSource('ALL_SOCIAL');
 
   const sep = TARGET_URL.includes('?') ? '&' : '?';
   const fullUrl = source.utm ? `${TARGET_URL}${sep}${source.utm}` : TARGET_URL;
 
+  const workerProxy = getProxyForWorker(visitorIndex) || (process.env.PROXY_SERVER ? { server: process.env.PROXY_SERVER } : undefined);
+
+  // Dynamic Multi-Regional Residential IP spoofing for upstream reverse proxies
+  const r1 = Math.floor(20 + Math.random() * 200);
+  const r2 = Math.floor(10 + Math.random() * 240);
+  const r3 = Math.floor(2 + Math.random() * 250);
+  const dynamicIp = `156.${r1}.${r2}.${r3}`;
+
   const context = await browser.newContext({
+    ...(workerProxy ? { proxy: workerProxy } : {}),
     userAgent: device.userAgent,
     viewport: device.viewport,
     deviceScaleFactor: 1,
@@ -69,6 +79,10 @@ async function runVisitor(browser, visitorIndex, stats) {
     permissions: ['geolocation'],
     extraHTTPHeaders: {
       'Accept-Language': 'ar-EG,ar;q=0.9,en-US;q=0.8,en;q=0.7',
+      'X-Forwarded-For': dynamicIp,
+      'CF-Connecting-IP': dynamicIp,
+      'X-Real-IP': dynamicIp,
+      'True-Client-IP': dynamicIp,
       ...(source.referrer ? { 'Referer': source.referrer } : {})
     }
   });
@@ -137,10 +151,10 @@ async function runVisitor(browser, visitorIndex, stats) {
     beaconResolve();
   });
 
-  page.on('request', (req) => {
+  context.on('request', (req) => {
     const u = req.url().toLowerCase();
-    // Adsterra Popunder verified click pixel or direct delivery
-    if (u.includes('puclc') || u.includes('/4/bddf0ad130b9e3b902fe7ce3a79e5d11') || u.includes('delivery')) {
+    // Adsterra Popunder verified click pixel, redirect, or advertiser delivery
+    if (u.includes('puclc') || u.includes('/4/bddf0ad130b9e3b902fe7ce3a79e5d11') || u.includes('delivery') || u.includes('nn125') || u.includes('vidox')) {
       impressionRecorded = true;
     }
   });
