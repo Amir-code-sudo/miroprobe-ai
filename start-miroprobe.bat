@@ -428,7 +428,7 @@ if "%swarm_mode%"=="2" (
 ) else if "%swarm_mode%"=="3" (
     call node run-london-100.js "%TARGET_URL%" %TOTAL_VISITS% %WORKERS_COUNT%
 ) else (
-    call node turbo-engine.js "%TARGET_URL%" %TOTAL_VISITS% %WORKERS_COUNT%
+    call node turbo-engine.js "%TARGET_URL%" %TOTAL_VISITS% %WORKERS_COUNT% "%TARGET_GEO%"
 )
 pause
 goto MENU

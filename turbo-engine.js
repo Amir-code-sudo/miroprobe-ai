@@ -14,6 +14,7 @@ const os = require('os');
 const { getRandomTrafficSource, getRandomDeviceProfile } = require('./traffic-sources');
 const { sendTelemetry } = require('./telemetry-client');
 const { getProxyForWorker } = require('./proxy-pool');
+const { getGeoProfile, getRandomGeoProfile } = require('./geo-engine');
 
 // Configuration
 const TARGET_URL = (process.argv[2] || process.env.TARGET_URL || 'https://cinewave-hub.pages.dev').trim().replace(/\/$/, '');
@@ -23,6 +24,7 @@ const TOTAL_VISITS = parseInt(process.argv[3] || '100', 10);
 const DETECTED_CORES = os.cpus().length || 4;
 const DEFAULT_CONCURRENCY = Math.min(14, Math.max(4, DETECTED_CORES));
 const CONCURRENCY = parseInt(process.argv[4] || String(DEFAULT_CONCURRENCY), 10);
+const TARGET_GEO = (process.argv[5] || process.env.TARGET_GEO || 'US').toUpperCase();
 
 // Turbo Chromium Engine Flags (Offscreen Headed for 100% Adsterra Anti-Bot Verification)
 const TURBO_CHROME_ARGS = [
@@ -61,6 +63,8 @@ async function runVisitor(browser, visitorIndex, stats) {
 
   const workerProxy = getProxyForWorker(visitorIndex) || (process.env.PROXY_SERVER ? { server: process.env.PROXY_SERVER } : undefined);
 
+  const geo = TARGET_GEO === 'ALL' ? getRandomGeoProfile() : getGeoProfile(TARGET_GEO);
+
   const context = await browser.newContext({
     ...(workerProxy ? { proxy: workerProxy } : {}),
     userAgent: device.userAgent,
@@ -68,11 +72,12 @@ async function runVisitor(browser, visitorIndex, stats) {
     deviceScaleFactor: 1,
     isMobile: device.isMobile,
     hasTouch: device.hasTouch || false,
-    locale: 'ar-EG',
-    timezoneId: 'Africa/Cairo',
+    locale: geo.locale,
+    timezoneId: geo.timezoneId,
+    geolocation: { latitude: geo.latitude, longitude: geo.longitude },
     permissions: ['geolocation'],
     extraHTTPHeaders: {
-      'Accept-Language': 'ar-EG,ar;q=0.9,en-US;q=0.8,en;q=0.7',
+      'Accept-Language': geo.acceptLanguage,
       ...(source.referrer ? { 'Referer': source.referrer } : {})
     }
   });
@@ -153,8 +158,8 @@ async function runVisitor(browser, visitorIndex, stats) {
   sendTelemetry({
     type: 'start',
     visitorIndex,
-    geo: 'Cairo',
-    flag: '🇪🇬',
+    geo: geo.cityNameAr || geo.cityNameEn || 'New York',
+    flag: geo.flag || '🇺🇸',
     os: device.os,
     source: source.nameEn
   });
@@ -189,8 +194,8 @@ async function runVisitor(browser, visitorIndex, stats) {
     sendTelemetry({
       type: 'finish',
       visitorIndex,
-      geo: 'Cairo',
-      flag: '🇪🇬',
+      geo: geo.cityNameAr || geo.cityNameEn || 'New York',
+      flag: geo.flag || '🇺🇸',
       os: device.os,
       source: source.nameEn,
       dwell: elapsed,
