@@ -195,7 +195,16 @@ while true; do
       echo ""
       echo "Running Real International Visitors Swarm..."
       echo "Target: $TARGET_URL | Visits: $TOTAL_VISITS | Concurrency: $WORKERS_COUNT | Gateway: $GATEWAY_STATUS"
-      PROXY_SERVER="$PROXY_SERVER" node run-london-100.js "$TARGET_URL" "$TOTAL_VISITS" "$WORKERS_COUNT"
+      echo ""
+      echo "Select Swarm Engine:"
+      echo "  [1] ⚡ Extreme Turbo Engine (Fastest, Minimal RAM/CPU, Early Beacon Exit - Recommended)"
+      echo "  [2] 🌐 Classic International Swarm"
+      read -p "Enter choice (1-2, default 1): " swarm_choice
+      if [ "$swarm_choice" = "2" ]; then
+        PROXY_SERVER="$PROXY_SERVER" node run-london-100.js "$TARGET_URL" "$TOTAL_VISITS" "$WORKERS_COUNT"
+      else
+        PROXY_SERVER="$PROXY_SERVER" node turbo-engine.js "$TARGET_URL" "$TOTAL_VISITS" "$WORKERS_COUNT"
+      fi
       read -p "Press Enter to continue..."
       ;;
     8)

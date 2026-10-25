@@ -1,4 +1,4 @@
-@echo off
+﻿@echo off
 chcp 65001 >nul
 title MiroProbe AI - Visitor Scenario ^& Load Testing Studio (Graduation Project)
 color 0B
@@ -408,18 +408,27 @@ echo.
 echo ============================================================================
 echo   Running Real International Visitors Swarm (Playwright Real Browsers)
 echo   Target Volume  : %TOTAL_VISITS% Real Visits
-echo   Concurrency    : %WORKERS_COUNT% Parallel Windows (Safe Batching)
+echo   Concurrency    : %WORKERS_COUNT% Parallel Windows
 echo   Target Website : "%TARGET_URL%"
 echo ============================================================================
-echo Select Browser Display Mode:
-echo   [1] Visible Chrome Windows on Screen (Headed - ترى المتصفح يتحرك أمامك)
-echo   [2] Fast Background Mode (Headless - تشغيل صامت وسريع في الخلفية)
 echo.
-set /p swarm_mode="Enter choice (1 or 2, default is 1): "
+set "custom_vol="
+set /p custom_vol="Enter visits count (Press Enter to keep %TOTAL_VISITS%): "
+if not "%custom_vol%"=="" set "TOTAL_VISITS=%custom_vol%"
+echo.
+echo Select Execution Engine:
+echo   [1] ⚡ Extreme Turbo Engine (أسرع 10 أضعاف + توفير 80%% رامات ومعالج + خروج ذكي بعد إشعار الإعلان)
+echo   [2] 🖥️ Visible Chrome Windows on Screen (Headed - ترى المتصفحات تتحرك أمامك)
+echo   [3] ⚡ Standard Headless Swarm
+echo.
+set "swarm_mode=1"
+set /p swarm_mode="Enter choice (1-3, default is 1): "
 if "%swarm_mode%"=="2" (
+    call node run-london-100.js "%TARGET_URL%" %TOTAL_VISITS% %WORKERS_COUNT% --headed
+) else if "%swarm_mode%"=="3" (
     call node run-london-100.js "%TARGET_URL%" %TOTAL_VISITS% %WORKERS_COUNT%
 ) else (
-    call node run-london-100.js "%TARGET_URL%" %TOTAL_VISITS% %WORKERS_COUNT% --headed
+    call node turbo-engine.js "%TARGET_URL%" %TOTAL_VISITS% %WORKERS_COUNT%
 )
 pause
 goto MENU
