@@ -171,16 +171,25 @@ async function runVisitor(browser, visitorIndex, stats) {
     // 1. Navigate with fast DOM ready
     await page.goto(fullUrl, { waitUntil: 'domcontentloaded', timeout: 15000 }).catch(() => {});
 
-    // 2. Allow 2.0s for Adsterra anti-bot handshake and transparent click-overlay injection
-    await page.waitForTimeout(2000).catch(() => {});
+    // 2. Allow 1.5s for HilltopAds anti-bot script to initialize
+    await page.waitForTimeout(1500).catch(() => {});
 
-    // 3. User activation click directly on the ad overlay to trigger popup
-    await page.mouse.move(250 + Math.random() * 200, 200 + Math.random() * 150, { steps: 3 }).catch(() => {});
-    await page.mouse.down().catch(() => {});
-    await page.waitForTimeout(60).catch(() => {});
-    await page.mouse.up().catch(() => {});
+    // 3. Natural user interaction: click movie card to activate Popunder
+    const movieCard = await page.$('.movie-card');
+    if (movieCard) {
+      await movieCard.click().catch(() => {});
+    } else {
+      await page.mouse.click(300, 250).catch(() => {});
+    }
+    await page.waitForTimeout(1200).catch(() => {});
 
-    // 4. Event-Driven Wait: Waits for full popup redirect to advertiser offer (or fallback timeout)
+    // 4. Secondary interaction: click server button inside watch modal to trigger DirectLink
+    const serverBtn = await page.$('.server-btn');
+    if (serverBtn) {
+      await serverBtn.click().catch(() => {});
+    }
+
+    // 5. Event-Driven Wait: Waits for full popup redirect to advertiser offer (or fallback timeout)
     await Promise.race([
       beaconPromise,
       new Promise(r => setTimeout(r, 4500))
