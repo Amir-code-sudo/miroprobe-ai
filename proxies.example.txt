@@ -1,0 +1,12 @@
+# ============================================================================
+# MiroProbe AI — Proxy Pool Configuration Template
+# Add your HTTP, HTTPS, or SOCKS5 proxies below (one per line).
+# Formats supported:
+#   ip:port
+#   http://ip:port
+#   http://username:password@ip:port
+#   socks5://username:password@ip:port
+#   ip:port:user:pass (Webshare format)
+# ============================================================================
+# Example:
+# socks5://user123:secret456@45.38.107.97:6014

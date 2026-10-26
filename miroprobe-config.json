@@ -1,13 +1,13 @@
 {
   "targetUrl": "https://cinewave-hub.pages.dev",
-  "visitorsPerMinute": 1000,
+  "visitorsPerMinute": 100,
   "testDuration": "30s",
-  "parallelWorkers": 8,
-  "repeatWaves": 1000,
-  "targetGeo": "Egypt",
+  "parallelWorkers": 5,
+  "repeatWaves": 25,
+  "targetGeo": "US",
   "trafficSource": "ALL_SOCIAL",
   "deviceMix": "BALANCED",
   "proxyServer": "",
-  "totalVisits": 1000,
-  "selectedWorker": "1"
+  "totalVisits": 100,
+  "selectedWorker": "0"
 }

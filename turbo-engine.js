@@ -13,7 +13,7 @@ const { chromium } = require('playwright');
 const os = require('os');
 const { getRandomTrafficSource, getRandomDeviceProfile } = require('./traffic-sources');
 const { sendTelemetry } = require('./telemetry-client');
-const { getProxyForWorker } = require('./proxy-pool');
+const { getProxyForWorker, closeAllBridges } = require('./proxy-pool');
 const { getGeoProfile, getRandomGeoProfile } = require('./geo-engine');
 const { getAegisPersona } = require('./aegis-identity-engine');
 
@@ -62,10 +62,13 @@ async function runVisitor(browser, visitorIndex, stats) {
   const sep = TARGET_URL.includes('?') ? '&' : '?';
   const fullUrl = source.utm ? `${TARGET_URL}${sep}${source.utm}` : TARGET_URL;
 
-  const workerProxy = getProxyForWorker(visitorIndex) || (process.env.PROXY_SERVER ? { server: process.env.PROXY_SERVER } : undefined);
+  const workerProxy = (await getProxyForWorker(visitorIndex)) || (process.env.PROXY_SERVER ? { server: process.env.PROXY_SERVER } : undefined);
 
   // AegisVPN Residential Identity & Node Integration
   const aegis = getAegisPersona(TARGET_GEO);
+  if (workerProxy && workerProxy.actualIp) {
+    aegis.assignedIp = workerProxy.actualIp;
+  }
   const geo = aegis;
 
   const context = await browser.newContext({
@@ -191,7 +194,7 @@ async function runVisitor(browser, visitorIndex, stats) {
 
   try {
     // 1. Navigate with fast DOM ready
-    await page.goto(fullUrl, { waitUntil: 'domcontentloaded', timeout: 15000 }).catch(() => {});
+    await page.goto(fullUrl, { waitUntil: 'domcontentloaded', timeout: 25000 }).catch(() => {});
 
     // 2. Allow 1.5s for HilltopAds anti-bot script to initialize
     await page.waitForTimeout(1500).catch(() => {});
@@ -303,6 +306,7 @@ async function main() {
 
   await Promise.all(workers);
   await browser.close().catch(() => {});
+  closeAllBridges();
 
   const totalTimeSec = ((Date.now() - stats.startTime) / 1000).toFixed(1);
   const avgRate = totalTimeSec > 0 ? (stats.completed / totalTimeSec).toFixed(1) : '0';
