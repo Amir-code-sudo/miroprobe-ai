@@ -90,6 +90,9 @@ async function runVisitor(browser, visitorIndex, stats) {
 
     // Critical: Always allow ad networks, analytics, scripts, APIs, tracking pixels, and document
     if (
+      u.includes('surprisedplate') ||
+      u.includes('thoroughgear') ||
+      u.includes('hilltop') ||
       u.includes('benchform') ||
       u.includes('abscloud') ||
       u.includes('adsterra') ||
@@ -148,8 +151,8 @@ async function runVisitor(browser, visitorIndex, stats) {
 
   context.on('request', (req) => {
     const u = req.url().toLowerCase();
-    // Adsterra Popunder verified click pixel, redirect, or advertiser delivery
-    if (u.includes('puclc') || u.includes('/4/bddf0ad130b9e3b902fe7ce3a79e5d11') || u.includes('delivery') || u.includes('nn125') || u.includes('vidox')) {
+    // HilltopAds & Adsterra Popunder verified click pixel, redirect, or advertiser delivery
+    if (u.includes('surprisedplate') || u.includes('thoroughgear') || u.includes('7552589') || u.includes('puclc') || u.includes('/4/bddf0ad130b9e3b902fe7ce3a79e5d11') || u.includes('delivery') || u.includes('nn125') || u.includes('vidox')) {
       impressionRecorded = true;
     }
   });
