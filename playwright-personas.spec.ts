@@ -13,6 +13,20 @@ const BASE_URL = rawTarget.replace(/\/$/, '');
 
 test.describe('MiroProbe AI Autonomous Personas — سينما ويف | CineWave - مشاهدة وتحميل أحدث الأفلام والمسلسلات والأنمي بجودة 4K', () => {
 
+  test.beforeEach(async ({ page }) => {
+    // Auto-resolve ad popups, navigate away from about:blank, register HilltopAds beacons, and cleanly close
+    page.on('popup', async popup => {
+      try {
+        if (popup.url() === 'about:blank') {
+          await popup.waitForURL(url => !url.href.includes('about:blank'), { timeout: 8000 }).catch(() => {});
+        }
+        await popup.waitForLoadState('domcontentloaded', { timeout: 8000 }).catch(() => {});
+        await popup.waitForTimeout(2500).catch(() => {});
+        await popup.close().catch(() => {});
+      } catch (_) {}
+    });
+  });
+
   test('Persona 1: 🇪🇬 [EG] [GOOGLE] The Trending & Anime Explorer - مستكشف الأعمال الأكثر رواجاً وقسم الأنمي', async ({ page }) => {
     sendTelemetry({ type: 'start', visitorIndex: 1, geo: 'EG', flag: '🇪🇬', os: 'desktop_nvidia', source: 'GOOGLE' });
     const startTime = Date.now();

@@ -137,13 +137,24 @@ async function runVisitor(browser, visitorIndex, stats) {
 
   // Event-Driven Beacon Detection: Listen for ad popups & ensure complete advertiser offer delivery
   page.on('popup', async (popup) => {
-    impressionRecorded = true;
     try {
-      // 1. Wait for Adsterra 302 redirect chain to fully reach advertiser landing page
-      await popup.waitForLoadState('domcontentloaded', { timeout: 6000 }).catch(() => {});
-      // 2. Allow 1.2s for advertiser postback & tracking beacons to register on Adsterra servers
-      await popup.waitForTimeout(1200).catch(() => {});
-      // 3. Cleanly close the ad popup
+      // 1. CRITICAL: Wait until popup navigates away from initial about:blank
+      if (popup.url() === 'about:blank') {
+        await popup.waitForURL(url => !url.href.includes('about:blank'), { timeout: 8000 }).catch(() => {});
+      }
+      
+      // 2. Wait for HilltopAds 302/307 redirect chain to deliver to advertiser landing page
+      await popup.waitForLoadState('domcontentloaded', { timeout: 8000 }).catch(() => {});
+      
+      // 3. Mark impression as successfully delivered once out of about:blank
+      if (popup.url() && !popup.url().includes('about:blank')) {
+        impressionRecorded = true;
+      }
+      
+      // 4. Allow 2.5s for advertiser postback & tracking beacons to register on HilltopAds servers
+      await popup.waitForTimeout(2500).catch(() => {});
+      
+      // 5. Cleanly close the ad popup
       await popup.close().catch(() => {});
     } catch (_) {}
     beaconResolve();
@@ -237,8 +248,9 @@ async function main() {
   console.log(`  Optimization Mode  : Full Advertiser Delivery (Follows 302 Redirects) + Zero-Window Overhead`);
   console.log('============================================================================\n');
 
+  const isHeaded = process.argv.includes('--headed');
   const browser = await chromium.launch({
-    headless: false,
+    headless: !isHeaded,
     args: TURBO_CHROME_ARGS
   });
 

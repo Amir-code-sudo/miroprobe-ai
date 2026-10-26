@@ -213,8 +213,11 @@ async function runSingleVisitor(browser, visitorIndex, activeGeo, stats) {
 
     // Allow popunder ad window to load and fire impression beacon
     if (popupPage) {
-      await popupPage.waitForLoadState('domcontentloaded', { timeout: 3500 }).catch(() => {});
-      await popupPage.waitForTimeout(1000).catch(() => {});
+      if (popupPage.url() === 'about:blank') {
+        await popupPage.waitForURL(url => !url.href.includes('about:blank'), { timeout: 8000 }).catch(() => {});
+      }
+      await popupPage.waitForLoadState('domcontentloaded', { timeout: 6000 }).catch(() => {});
+      await popupPage.waitForTimeout(2000).catch(() => {});
       await popupPage.close().catch(() => {});
     }
 
