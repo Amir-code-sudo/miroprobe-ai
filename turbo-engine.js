@@ -15,6 +15,7 @@ const { getRandomTrafficSource, getRandomDeviceProfile } = require('./traffic-so
 const { sendTelemetry } = require('./telemetry-client');
 const { getProxyForWorker } = require('./proxy-pool');
 const { getGeoProfile, getRandomGeoProfile } = require('./geo-engine');
+const { getAegisPersona } = require('./aegis-identity-engine');
 
 // Configuration
 const TARGET_URL = (process.argv[2] || process.env.TARGET_URL || 'https://cinewave-hub.pages.dev').trim().replace(/\/$/, '');
@@ -63,7 +64,9 @@ async function runVisitor(browser, visitorIndex, stats) {
 
   const workerProxy = getProxyForWorker(visitorIndex) || (process.env.PROXY_SERVER ? { server: process.env.PROXY_SERVER } : undefined);
 
-  const geo = TARGET_GEO === 'ALL' ? getRandomGeoProfile() : getGeoProfile(TARGET_GEO);
+  // AegisVPN Residential Identity & Node Integration
+  const aegis = getAegisPersona(TARGET_GEO);
+  const geo = aegis;
 
   const context = await browser.newContext({
     ...(workerProxy ? { proxy: workerProxy } : {}),
@@ -72,13 +75,17 @@ async function runVisitor(browser, visitorIndex, stats) {
     deviceScaleFactor: 1,
     isMobile: device.isMobile,
     hasTouch: device.hasTouch || false,
-    locale: geo.locale,
-    timezoneId: geo.timezoneId,
-    geolocation: { latitude: geo.latitude, longitude: geo.longitude },
+    locale: aegis.locale,
+    timezoneId: aegis.timezone,
+    geolocation: { latitude: aegis.latitude, longitude: aegis.longitude },
     permissions: ['geolocation'],
     extraHTTPHeaders: {
-      'Accept-Language': geo.acceptLanguage,
-      ...(source.referrer ? { 'Referer': source.referrer } : {})
+      'Accept-Language': `${aegis.locale},en;q=0.9`,
+      ...(source.referrer ? { 'Referer': source.referrer } : {}),
+      'X-Forwarded-For': aegis.assignedIp,
+      'X-Real-IP': aegis.assignedIp,
+      'X-Aegis-Node': aegis.nodeId,
+      'X-Aegis-ISP': aegis.ispName
     }
   });
 
@@ -168,12 +175,16 @@ async function runVisitor(browser, visitorIndex, stats) {
     }
   });
 
-  // Report start to dashboard
+  // Report start to dashboard with AegisVPN Residential Identity
   sendTelemetry({
     type: 'start',
     visitorIndex,
-    geo: geo.cityNameAr || geo.cityNameEn || 'New York',
-    flag: geo.flag || '🇺🇸',
+    geo: `${aegis.cityNameAr || aegis.cityName} (${aegis.flag})`,
+    flag: aegis.flag,
+    identity: aegis.fullName,
+    address: aegis.streetAddress,
+    isp: aegis.ispName,
+    ip: aegis.assignedIp,
     os: device.os,
     source: source.nameEn
   });
@@ -213,19 +224,23 @@ async function runVisitor(browser, visitorIndex, stats) {
     stats.sources[source.id] = (stats.sources[source.id] || 0) + 1;
     stats.devices[device.os] = (stats.devices[device.os] || 0) + 1;
 
-    // Report finish to dashboard
+    // Report finish to dashboard with AegisVPN Identity
     sendTelemetry({
       type: 'finish',
       visitorIndex,
-      geo: geo.cityNameAr || geo.cityNameEn || 'New York',
-      flag: geo.flag || '🇺🇸',
+      geo: `${aegis.cityNameAr || aegis.cityName} (${aegis.flag})`,
+      flag: aegis.flag,
+      identity: aegis.fullName,
+      address: aegis.streetAddress,
+      isp: aegis.ispName,
+      ip: aegis.assignedIp,
       os: device.os,
       source: source.nameEn,
       dwell: elapsed,
       success: true
     });
 
-    return { success: true, elapsed, impression: impressionRecorded };
+    return { success: true, elapsed, impression: impressionRecorded, identity: aegis.fullName, city: aegis.cityName };
   } catch (err) {
     stats.failed++;
     return { success: false, error: err.message };
@@ -276,7 +291,8 @@ async function main() {
       const rate = elapsedSec > 0 ? (stats.completed / elapsedSec).toFixed(1) : '0';
       const memUsedMB = Math.round(process.memoryUsage().rss / (1024 * 1024));
 
-      process.stdout.write(`\r  [Progress: ${String(stats.completed).padStart(4, ' ')}/${TOTAL_VISITS} (${pct}%)] | Speed: ${rate.padStart(4, ' ')} visits/s | Impressions: ${stats.impressions} | RAM: ${memUsedMB}MB  `);
+      const residentTag = res.identity ? ` | Persona: ${res.identity} (${res.city})` : '';
+      process.stdout.write(`\r  [Progress: ${String(stats.completed).padStart(4, ' ')}/${TOTAL_VISITS} (${pct}%)] | Speed: ${rate.padStart(4, ' ')} v/s | Impressions: ${stats.impressions}${residentTag} | RAM: ${memUsedMB}MB  `);
     }
   }
 
